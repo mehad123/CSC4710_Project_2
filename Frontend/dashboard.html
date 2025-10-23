@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <style>
+            label{
+                display: block;
+            }
+        </style>
+        <script>
+            const isLoggedIn = sessionStorage.getItem("loggedIn");
+            if (!isLoggedIn){
+                window.location.href = "index.html"
+            }
+        </script>
+    </head>
+    <body>
+        <button onclick="
+            sessionStorage.removeItem('loggedIn');
+            window.location.href = 'index.html';">
+            Sign Out
+        </button>
+       <h1>Dashboard</h1> 
+       <form id="search-form">
+            <fieldset>
+                <label>
+                    Username?
+                    <input type="text" name="username">
+                    <button type="submit" name="action" value="username" >Search username</button>
+                </label>
+                <label>
+                    First Name?
+                    <input type="text" name="firstname">
+                    <button type="submit" name="action" value="firstname" >Search first name</button>
+                </label>
+                <label>
+                    Last Name?
+                    <input type="text" name="lastname">
+                    <button type="submit" name="action" value="lastname" >Search last name</button>
+                </label>
+            </fieldset>
+            <fieldset>
+                <label>
+                    Salary?
+                    <input type="number" name="minSalary">
+                    <input type="number" name="maxSalary">
+
+                    <button type="submit" name="action" value="salary" >Search salary range</button>
+                </label>       
+                <label>
+                    Age?
+                    <input type="number" name="minAge">
+                    <input type="number" name="maxAge">  
+
+                    <button type="submit" name="action" value="age" >Search age range</button>
+                </label> 
+            </fieldset>
+            <fieldset>
+                <label>
+                    Search users registered after:
+                    <input type="text" name="regAfterUser" placeholder="username" >
+                    <button type="" name="action" value="registeredAfter" >submit</button> 
+                </label>
+                <label>
+                    Search users registered same day as:
+                    <input type="text" name="regSameUser" placeholder="username">
+                    <button type="submit" name="action" value="registeredCurrent" >submit</button> 
+                </label>
+            </fieldset>
+            <fieldset>
+                <button name="action" value="registeredToday" >Search registered today</button>
+                <button name="action" value="nosignin" >Search never signed in</button>
+                <button name="action" value="all">Get all users</button>
+            </fieldset>
+        </form>
+       <table border="1">
+            <thead>
+                <th>User</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Salary</th>
+                <th>Age</th>
+                <th>Registered</th>
+                <th>Signed In</th>
+            </thead>
+            <tbody id="user-entries">
+
+            </tbody>
+       </table>
+        <script src="dashboard.js"></script>
+    </body>
+</html>

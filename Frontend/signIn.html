@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in</title>
+  <style>
+    .border {
+      border: 1px solid black;
+      padding: 10px;
+    }
+  </style>
+  <script>
+      const isLoggedIn = sessionStorage.getItem("loggedIn");
+      if (isLoggedIn){
+          window.location.href = "dashboard.html"
+      }setItem('loggedIn','0');
+  </script>
+</head>
+<body>
+  <main>
+ 
+    <button id="back-btn">Back to Home</button>
+  
+    <h1>Sign In</h1>
+
+      <form id="login-form" method="post">
+        <div class="border">
+          <label>
+            Username:
+            <input type="text" name="username">
+          </label>
+          
+          <br><br>
+          <label>
+            Password:
+            <input id="loginpass" type="password" name="password">
+            <button type="button" id="show-loginpass">show</button>
+          </label>
+          
+          <br><br>
+          <p id="error-msg"></p>
+        </div>
+        <br>
+          <button type="submit">Sign In</button>
+        <br><br>
+      </form>
+
+
+</main>
+<script src="signIn.js"></script>
+</body>
+</html>

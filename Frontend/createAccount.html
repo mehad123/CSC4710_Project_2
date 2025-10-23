@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Sign up</title>
+        <script>
+            const isLoggedIn = sessionStorage.getItem("loggedIn");
+            if (isLoggedIn){
+                window.location.href = "dashboard.html"
+            }
+        </script>
+    </head>
+    <body>
+        <a href="index.html"><button>Back to Home</button></a>
+        <form id="create-form" method="post">
+            <h1>Sign Up</h1>
+            <fieldset>
+                <ul>
+                    <legend>Basic Account Information</legend>
+                    <li>
+                        <label >
+                            First Name
+                            <input name="firstname" type="text" required>
+                        </label>
+                    </li>
+                    <li>
+                        <label >
+                            Last Name
+                            <input name="lastname" type="text" required>
+                        </label>
+                    </li>
+                    <li>
+                        <label>
+                            Username
+                            <input name="username" type="text" required>
+                        </label>
+                    </li>
+                    <li>
+                        <label >
+                            Password
+                            <input id="createpass" type="password" name="password" required>
+                            <button type="button" id="show-createpass">show</button>
+                        </label>
+                    </li>
+                </ul>
+                <ul>
+                    <legend>Site-wide Information</legend>
+                    <li>
+                        <label >
+                            Salary 
+                            <input name="salary" type="number" required>
+                        </label>
+                    </li>
+                    <li>
+                        <label >
+                            Age
+                            <input name="age" type="number" min="1" max="500">
+                        </label>
+                    </li>
+                </ul>
+            </fieldset>
+            <button type="submit">Create Account</button>
+        </form>
+        <p id="create-error"></p>
+        <script src="createAccount.js"></script>
+    </body>
+</html>
