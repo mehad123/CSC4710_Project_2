@@ -56,49 +56,6 @@ const getUser = handleError(async (request, response) => {
     const result = await users.getUsersByName(username, "username");
     response.json(result);
 });
-const getUsersFname = handleError(async (request, response) => {
-    const {firstname} = request.params;
-    const result = await users.getUsersByName(firstname, "firstname");
-    response.json(result);
-});
-const getUsersLname = handleError(async (request, response) => {
-
-    const {lastname} = request.params;
-    const result = await users.getUsersByName(lastname, "lastname");
-    response.json(result);
-});
-
-const getUsersSalary = handleError(async (request, response) => {
-    const {minSalary, maxSalary} = request.query;
-    const result = await users.getUsersBySalary(minSalary, maxSalary);
-    response.json(result);
-});
-const getUsersAge = handleError(async (request, response) => {
-    const {minAge, maxAge} = request.query;
-    const result = await users.getUsersByAge(minAge, maxAge);
-    response.json(result);
-});
-const getUsersToday = handleError(async (request, response) => {
-    console.log("hola");
-    const result = await users.getUsersToday();
-    response.json(result);
-});
-const getUsersAfter = handleError(async (request, response) => {
-    const {username} = request.params;
-    const result = await users.getUsersAfterReg(username);
-    response.json(result);
-});
-const getUsersSame = handleError(async (request, response) => {
-    const {username} = request.params;
-    console.log(username);
-    const result = await users.getUsersSameReg(username);
-    response.json(result);
-});
-const getUsersNoSignIn = handleError(async (request, response) => {
-    const result = await users.getUsersNoSignIn();
-    response.json(result);
-});
-
 
 
 app.get('/users/firstname/:firstname', getUsersFname);
