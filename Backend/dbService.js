@@ -26,14 +26,13 @@ function connectToMYSQL(){
       if (connection.state === "connected"){
          connection.query(`
             CREATE TABLE IF NOT EXISTS users (
-               username VARCHAR(50) primary key,
-               password VARCHAR(100),
+               clientId VARCHAR(50) primary key,
                firstname VARCHAR(50),
                lastname VARCHAR(50),
-               salary FLOAT,
-               age INTEGER,
-               registerday DATE,
-               signintime DATETIME
+               email VARCHAR(100),
+               address VARCHAR(100),
+               phoneNumber VARCHAR(20),
+               password VARCHAR(100)
             );
          `);
          clearInterval(reconnectTimer);
@@ -49,43 +48,43 @@ class Users{
       return instance;
    }
    async createUser(options){
-      const {username, password, firstname, lastname,
-         salary, age} = options;
+      const {firstname, lastname, email, address, phoneNumber, password} = options;
 
       const hashedPass = await bcrypt.hash(password, 10);
       await new Promise((resolve, reject) => {
-         const query = "INSERT INTO users (username, password, firstname, lastname, salary, age, registerday, signintime) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
-         connection.query(query, [username, hashedPass, firstname, lastname, salary, age, new Date(), null], (err, data) => {
+         const query = "INSERT INTO users (firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?);";
+         connection.query(query, [firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
    }
-   async deleteUser(username){
-      await new Promise((resolve, reject) => {
-         const query = "DELETE FROM users WHERE username = ?;";
-         connection.query(query, [username], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-   }
-   async updateUser(username, fields){
-      const colUpdates = Object.entries(fields).map(pair=>{
-         return `${pair[0]} = ${typeof pair[1] === "number" ? pair[1] : `'${pair[1]}'`}`;
-      }).join(", ");
-      await new Promise((resolve, reject) => {
-         const query = `UPDATE users SET ${colUpdates} WHERE username = ?;`;
-         connection.query(query, [username], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-   }
+
+   // async deleteUser(username){
+   //    await new Promise((resolve, reject) => {
+   //       const query = "DELETE FROM users WHERE username = ?;";
+   //       connection.query(query, [username], (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else resolve(data);
+   //       });
+   //    });
+   // }
+   // async updateUser(username, fields){
+   //    const colUpdates = Object.entries(fields).map(pair=>{
+   //       return `${pair[0]} = ${typeof pair[1] === "number" ? pair[1] : `'${pair[1]}'`}`;
+   //    }).join(", ");
+   //    await new Promise((resolve, reject) => {
+   //       const query = `UPDATE users SET ${colUpdates} WHERE username = ?;`;
+   //       connection.query(query, [username], (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else resolve(data);
+   //       });
+   //    });
+   // }
    async validateLogin(username, password){
       const realPassword = await new Promise((resolve, reject) => {
-         const query = "SELECT password FROM users WHERE username = ?;";
-         connection.query(query, [username], (err, data) => {
+         const query = "SELECT password FROM users WHERE firstname = ?;";
+         connection.query(query, [firstname], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
@@ -94,13 +93,13 @@ class Users{
       if (!validPass){
          return {success: false };
       }
-      await new Promise((resolve, reject) => {
-         const query = "UPDATE users SET signintime = ? WHERE username = ?;";
-         connection.query(query, [new Date(), username], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
+      // await new Promise((resolve, reject) => {
+      //    const query = "UPDATE users SET signintime = ? WHERE username = ?;";
+      //    connection.query(query, [new Date(), username], (err, data) => {
+      //          if(err) reject(new Error(err.message));
+      //          else resolve(data);
+      //    });
+      // });
       
       return {success: true};
    }
@@ -134,121 +133,121 @@ class Users{
       return result;
    }
 
-   async getUsersBySalary(minSalary, maxSalary){
-      const result = await new Promise((resolve, reject) => {
-         let query = `SELECT * FROM users WHERE 1=1`;
-         let params = [];
-         if (minSalary) {
-            query += " AND salary > ?";
-            params.push(minSalary);
-         }
-         if (maxSalary) {
-            query += " AND salary < ?";
-            params.push(maxSalary);
-         }
-         connection.query(query, params, (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-      result.forEach(row => {
-         delete row["password"];
-      });
-      return result;
-   }
+   // async getUsersBySalary(minSalary, maxSalary){
+   //    const result = await new Promise((resolve, reject) => {
+   //       let query = `SELECT * FROM users WHERE 1=1`;
+   //       let params = [];
+   //       if (minSalary) {
+   //          query += " AND salary > ?";
+   //          params.push(minSalary);
+   //       }
+   //       if (maxSalary) {
+   //          query += " AND salary < ?";
+   //          params.push(maxSalary);
+   //       }
+   //       connection.query(query, params, (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else resolve(data);
+   //       });
+   //    });
+   //    result.forEach(row => {
+   //       delete row["password"];
+   //    });
+   //    return result;
+   // }
 
-   async getUsersByAge(minAge, maxAge){
-      const result = await new Promise((resolve, reject) => {
-         let query = `SELECT * FROM users WHERE 1=1`;
-         let params = [];
-         if (minAge){
-            query += " AND age > ?";
-            params.push(minAge);
-         } 
-         if (maxAge){
-            query += " AND age < ?";
-            params.push(maxAge);
-         } 
-         connection.query(query, params, (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-      result.forEach(row => {
-         delete row["password"];
-      });
-      return result;
-   }
+   // async getUsersByAge(minAge, maxAge){
+   //    const result = await new Promise((resolve, reject) => {
+   //       let query = `SELECT * FROM users WHERE 1=1`;
+   //       let params = [];
+   //       if (minAge){
+   //          query += " AND age > ?";
+   //          params.push(minAge);
+   //       } 
+   //       if (maxAge){
+   //          query += " AND age < ?";
+   //          params.push(maxAge);
+   //       } 
+   //       connection.query(query, params, (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else resolve(data);
+   //       });
+   //    });
+   //    result.forEach(row => {
+   //       delete row["password"];
+   //    });
+   //    return result;
+   // }
 
-   async getUsersAfterReg(username){
-      let dayRegistered = await new Promise((resolve, reject) => {
-         const query = `SELECT registerday FROM users WHERE username = ?;`;
-         connection.query(query, [username], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else if(!data[0]) reject(new Error("no user"));
-               else resolve(data[0]["registerday"]);
-         });
-      });
-      const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM users WHERE DATE(registerday) > DATE(?);`;
-         connection.query(query, [dayRegistered], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-      result.forEach(row => {
-         delete row["password"];
-      });
-      return result;
-   }
-   async getUsersSameReg(username){
-      let dayRegistered = await new Promise((resolve, reject) => {
-         const query = `SELECT registerday FROM users WHERE username = ?;`;
-         connection.query(query, [username], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else if(!data[0]) reject(new Error("no user"));
-               else resolve(data[0]["registerday"]);
-         });
-      });
-      const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM users WHERE DATE(registerday) = DATE(?);`;
-         connection.query(query, [dayRegistered], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-      result.forEach(row => {
-         delete row["password"];
-      });
-      return result;
-   }
-   async getUsersToday(){
-      const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM users WHERE DATE(registerday) = CURDATE();`;
-         connection.query(query, (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-      result.forEach(row => {
-         delete row["password"];
-      });
-      return result;
-   }
+   // async getUsersAfterReg(username){
+   //    let dayRegistered = await new Promise((resolve, reject) => {
+   //       const query = `SELECT registerday FROM users WHERE username = ?;`;
+   //       connection.query(query, [username], (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else if(!data[0]) reject(new Error("no user"));
+   //             else resolve(data[0]["registerday"]);
+   //       });
+   //    });
+   //    const result = await new Promise((resolve, reject) => {
+   //       const query = `SELECT * FROM users WHERE DATE(registerday) > DATE(?);`;
+   //       connection.query(query, [dayRegistered], (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else resolve(data);
+   //       });
+   //    });
+   //    result.forEach(row => {
+   //       delete row["password"];
+   //    });
+   //    return result;
+   // }
+   // async getUsersSameReg(username){
+   //    let dayRegistered = await new Promise((resolve, reject) => {
+   //       const query = `SELECT registerday FROM users WHERE username = ?;`;
+   //       connection.query(query, [username], (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else if(!data[0]) reject(new Error("no user"));
+   //             else resolve(data[0]["registerday"]);
+   //       });
+   //    });
+   //    const result = await new Promise((resolve, reject) => {
+   //       const query = `SELECT * FROM users WHERE DATE(registerday) = DATE(?);`;
+   //       connection.query(query, [dayRegistered], (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else resolve(data);
+   //       });
+   //    });
+   //    result.forEach(row => {
+   //       delete row["password"];
+   //    });
+   //    return result;
+   // }
+   // async getUsersToday(){
+   //    const result = await new Promise((resolve, reject) => {
+   //       const query = `SELECT * FROM users WHERE DATE(registerday) = CURDATE();`;
+   //       connection.query(query, (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else resolve(data);
+   //       });
+   //    });
+   //    result.forEach(row => {
+   //       delete row["password"];
+   //    });
+   //    return result;
+   // }
 
-   async getUsersNoSignIn(){
-      const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM users WHERE signintime IS NULL;`;
-         connection.query(query, (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-      result.forEach(row => {
-         delete row["password"];
-      });
-      return result;
-   } 
+   // async getUsersNoSignIn(){
+   //    const result = await new Promise((resolve, reject) => {
+   //       const query = `SELECT * FROM users WHERE signintime IS NULL;`;
+   //       connection.query(query, (err, data) => {
+   //             if(err) reject(new Error(err.message));
+   //             else resolve(data);
+   //       });
+   //    });
+   //    result.forEach(row => {
+   //       delete row["password"];
+   //    });
+   //    return result;
+   // } 
 }
 
 
