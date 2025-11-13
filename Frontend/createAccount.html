@@ -17,7 +17,7 @@
             <h1>Sign Up</h1>
             <fieldset>
                 <ul>
-                    <legend>Basic Account Information</legend>
+                    <legend><b>Basic Account Information</b></legend>
                     <li>
                         <label >
                             First Name
@@ -32,8 +32,20 @@
                     </li>
                     <li>
                         <label>
-                            Username
-                            <input name="username" type="text" required>
+                            Email
+                            <input name="email" type="email" required>
+                        </label>
+                    </li>
+                    <li>
+                        <label>
+                            Address
+                            <input name="address" type="text" required>
+                        </label>
+                    </li>
+                    <li>
+                        <label>
+                            Phone Number
+                            <input name="phone_number" type="tel" required>
                         </label>
                     </li>
                     <li>
@@ -43,21 +55,32 @@
                             <button type="button" id="show-createpass">show</button>
                         </label>
                     </li>
-                </ul>
-                <ul>
-                    <legend>Site-wide Information</legend>
+                    <br>
+                    <b>Credit Card Information</b>
                     <li>
-                        <label >
-                            Salary 
-                            <input name="salary" type="number" required>
+                        <label>
+                            Cardholder Name
+                            <input name="cardholder" type="text" required>
                         </label>
                     </li>
                     <li>
-                        <label >
-                            Age
-                            <input name="age" type="number" min="1" max="500">
+                        <label>
+                            Credit Card Number
+                            <input name="credit_card" type="tel" inputmode="numeric" pattern="[0-9\s]{13,19}" autocomplete="cc-number" maxlength="19" placeholder="xxxx xxxx xxxx xxxx" required>
                         </label>
                     </li>
+                    <li>
+                        <label>
+                            Card Expiration Date
+                            <input name="expiration_date" type="month" required>
+                        </label>
+                    </li>
+                    <li>
+                        <label>
+                            CVV
+                            <input name="cvv" type="password" inputmode="numeric" pattern="[0-9]{3,4}" maxlength="4" placeholder="xxx" required>
+                        </label>
+                    </li>                    
                 </ul>
             </fieldset>
             <button type="submit">Create Account</button>
