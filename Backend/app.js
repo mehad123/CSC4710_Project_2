@@ -58,6 +58,37 @@ const getUser = handleError(async (request, response) => {
     response.json(result);
 });
 
+const createServiceRequest = handleError(async (req, res) => {
+    const clientId = req.body.clientId;
+    const { address, cleanType, roomQuantity, prefDate, budget, note } = req.body;
+
+    let photos = [];
+    if (req.files) {
+        photos = req.files.map(file => file.filename);
+    }
+
+    await serviceRequests.createServiceRequest({
+        clientId,
+        address,
+        cleanType,
+        roomQuantity: parseInt(roomQuantity),
+        preferredDateTime: prefDate,
+        proposedBudget: parseFloat(budget),
+        optionalNote: note,
+        photos
+    });
+
+    res.json({ success: true });
+});
+app.post("/service-requests", multerFormParser.array("photos", 5), createServiceRequest);
+
+const getServiceRequests = handleError(async (req, res) => {
+    const { clientId } = req.params;
+    const result = await serviceRequests.getRequestsByClient(clientId);
+    res.json(result);
+});
+
+app.get("/service-requests/:clientId", getServiceRequests);
 
 // app.get('/users/firstname/:firstname', getUsersFname);
 // app.get('/users/lastname/:lastname', getUsersLname);

@@ -4,7 +4,8 @@ const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require('uuid');
 dotenv.config(); 
 
-let instance = null;
+let usersInstance = null;
+let serviceRequestsInstance = null;
 let connection = null;
 let reconnectTimer = null;
 
@@ -60,8 +61,8 @@ function connectToMYSQL(){
 
 class Users{
    static getUsersInstance(){ 
-      instance = instance ? instance : new Users();
-      return instance;
+      usersInstance = usersInstance ? usersInstance : new Users();
+      return usersInstance;
    }
    async createUser(options){
       const {firstname, lastname, email, address, phoneNumber, password} = options;
@@ -100,7 +101,7 @@ class Users{
    // }
    async validateLogin(email, password){
       const realPassword = await new Promise((resolve, reject) => {
-         const query = "SELECT password FROM users WHERE email = ?;";
+         const query = "SELECT clientId, password FROM users WHERE email = ?;";
          connection.query(query, [email], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
@@ -118,7 +119,7 @@ class Users{
       //    });
       // });
       
-      return {success: true};
+      return { success: true, clientId: realPassword[0].clientId };
    }
 
    async getAllUsers(){
@@ -269,8 +270,8 @@ class Users{
 
 class ServiceRequests {
    static getServiceRequestInstance() {
-        instance = instance ? instance : new ServiceRequests();
-        return instance;
+        serviceRequestsInstance = serviceRequestsInstance ? serviceRequestsInstance : new ServiceRequests();
+        return serviceRequestsInstance;
     }
 
     async createServiceRequest(options) {
@@ -301,6 +302,18 @@ class ServiceRequests {
             );
         });
     }
+
+   async getRequestsByClient(clientId) {
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM service_requests WHERE clientId = ? ORDER BY preferredDateTime DESC`;
+         connection.query(query, [clientId], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
+   }
+
 }
 
 
