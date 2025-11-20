@@ -1,9 +1,11 @@
 const mysql = require('mysql');
 const dotenv = require('dotenv');
 const bcrypt = require("bcrypt");
+const { v4: uuidv4 } = require('uuid');
 dotenv.config(); 
 
-let instance = null;
+let usersInstance = null;
+let serviceRequestsInstance = null;
 let connection = null;
 let reconnectTimer = null;
 
@@ -35,6 +37,21 @@ function connectToMYSQL(){
                password VARCHAR(100)
             );
          `);
+
+         connection.query(`
+            CREATE TABLE IF NOT EXISTS service_requests (
+               requestId INT AUTO_INCREMENT PRIMARY KEY,
+               clientId VARCHAR(50),
+               address VARCHAR(200),
+               cleanType VARCHAR(100),
+               roomQuantity INT,
+               preferredDateTime DATETIME,
+               proposedBudget DECIMAL(10,2),
+               optionalNote VARCHAR(500),
+               photos JSON,
+               FOREIGN KEY (clientId) REFERENCES users(clientId)
+            );
+         `);
          clearInterval(reconnectTimer);
       }
       console.log('db ' + connection.state);  
@@ -44,18 +61,19 @@ function connectToMYSQL(){
 
 class Users{
    static getUsersInstance(){ 
-      instance = instance ? instance : new Users();
-      return instance;
+      usersInstance = usersInstance ? usersInstance : new Users();
+      return usersInstance;
    }
    async createUser(options){
       const {firstname, lastname, email, address, phoneNumber, password} = options;
+      const clientId = uuidv4();
 
       const hashedPass = await bcrypt.hash(password, 10);
       await new Promise((resolve, reject) => {
-         const query = "INSERT INTO users (firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?);";
-         connection.query(query, [firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
+         const query = "INSERT INTO users (clientId, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?);";
+         connection.query(query, [clientId, firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
                if(err) reject(new Error(err.message));
-               else resolve(data);
+               else resolve({ clientId, data });
          });
       });
    }
@@ -81,10 +99,10 @@ class Users{
    //       });
    //    });
    // }
-   async validateLogin(username, password){
+   async validateLogin(email, password){
       const realPassword = await new Promise((resolve, reject) => {
-         const query = "SELECT password FROM users WHERE firstname = ?;";
-         connection.query(query, [firstname], (err, data) => {
+         const query = "SELECT clientId, password FROM users WHERE email = ?;";
+         connection.query(query, [email], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
@@ -101,7 +119,7 @@ class Users{
       //    });
       // });
       
-      return {success: true};
+      return { success: true, clientId: realPassword[0].clientId };
    }
 
    async getAllUsers(){
@@ -250,6 +268,54 @@ class Users{
    // } 
 }
 
+class ServiceRequests {
+   static getServiceRequestInstance() {
+        serviceRequestsInstance = serviceRequestsInstance ? serviceRequestsInstance : new ServiceRequests();
+        return serviceRequestsInstance;
+    }
 
-module.exports = Users;
+    async createServiceRequest(options) {
+        const {clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
+
+        await new Promise((resolve, reject) => {
+            const query = `
+                INSERT INTO service_requests 
+                (clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            `;
+
+            connection.query(
+                query,
+                [
+                    clientId,
+                    address,
+                    cleanType,
+                    roomQuantity,
+                    preferredDateTime,
+                    proposedBudget,
+                    optionalNote,
+                    JSON.stringify(photos)
+                ],
+                (err, data) => {
+                    if (err) reject(new Error(err.message));
+                    else resolve(data);
+                }
+            );
+        });
+    }
+
+   async getRequestsByClient(clientId) {
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM service_requests WHERE clientId = ? ORDER BY preferredDateTime DESC`;
+         connection.query(query, [clientId], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
+   }
+
+}
+
+
+module.exports = { Users, ServiceRequests };
  
