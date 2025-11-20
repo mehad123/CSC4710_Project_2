@@ -13,7 +13,7 @@
   <script>
       const isLoggedIn = sessionStorage.getItem("loggedIn");
       if (isLoggedIn){
-          window.location.href = "dashboard.html"
+          window.location.href = "clientDashboard.html"
       }setItem('loggedIn','0');
   </script>
 </head>
@@ -27,8 +27,8 @@
       <form id="login-form" method="post">
         <div class="border">
           <label>
-            Username:
-            <input type="text" name="username">
+            Email:
+            <input type="text" name="email">
           </label>
           
           <br><br>

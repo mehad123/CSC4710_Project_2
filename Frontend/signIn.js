@@ -8,10 +8,10 @@ form.addEventListener("submit", async (e)=>{
     const fields = Object.fromEntries((new FormData(form)).entries());
 
 
-    const {username, password} = fields;
+    const {email, password} = fields;
 
-    if (!username || !password) {
-        errorMsg.textContent = "Please enter both username and password.";
+    if (!email || !password) {
+        errorMsg.textContent = "Please enter both email and password.";
         errorMsg.style.color = "red";
         return;
     }
@@ -24,12 +24,12 @@ form.addEventListener("submit", async (e)=>{
         if (data && data.success) {
             console.log("Login successful!");
             alert("Login successful!");
-            sessionStorage.setItem("loggedIn", username);
-            window.location.href = "dashboard.html";
+            sessionStorage.setItem("loggedIn", email);
+            window.location.href = "clientDashboard.html";
         } else {
             console.error("Sign-in failed:", data.message || data);
-            alert("Invalid username or password!");
-            errorMsg.textContent = "Invalid username or password.";
+            alert("Invalid email or password!");
+            errorMsg.textContent = "Invalid email or password.";
             errorMsg.style.color = "red";
         }
     })

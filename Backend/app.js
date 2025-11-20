@@ -7,14 +7,15 @@ dotenv.config();
 const multerFormParser = multer();
 
 const app = express();
-const usersTable = require('./dbService');
-
+const { Users } = require('./dbService');
+const { ServiceRequests } = require('./dbService');
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 
-const users = usersTable.getUsersInstance();
+const users = Users.getUsersInstance();
+const serviceRequests = ServiceRequests.getServiceRequestInstance();
 
 function handleError(func){
     return async (req, res) => {
@@ -42,8 +43,8 @@ const updateUser = handleError(async (request, response) => {
     response.send("ok");
 });
 const logInUser = handleError(async (request, response) => {  
-    const {username, password} = request.body;
-    const result = await users.validateLogin(username, password);
+    const {email, password} = request.body;
+    const result = await users.validateLogin(email, password);
     response.json(result);
 });
 
@@ -70,9 +71,9 @@ const getUser = handleError(async (request, response) => {
 // app.get('/users/salary', getUsersSalary);
 // app.get('/users/age', getUsersAge);
 
-// app.post('/users', multerFormParser.none(),addUser);
+app.post('/users', multerFormParser.none(),addUser);
 // app.get('/users', getUsers);
-// app.post("/users/login", multerFormParser.none(), logInUser);
+app.post("/users/login", multerFormParser.none(), logInUser);
 // app.get('/users/:username', getUser);
 // app.delete('/users/:username',removeUser);
 // app.patch("/users/:username", updateUser);

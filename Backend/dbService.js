@@ -1,6 +1,7 @@
 const mysql = require('mysql');
 const dotenv = require('dotenv');
 const bcrypt = require("bcrypt");
+const { v4: uuidv4 } = require('uuid');
 dotenv.config(); 
 
 let instance = null;
@@ -64,13 +65,14 @@ class Users{
    }
    async createUser(options){
       const {firstname, lastname, email, address, phoneNumber, password} = options;
+      const clientId = uuidv4();
 
       const hashedPass = await bcrypt.hash(password, 10);
       await new Promise((resolve, reject) => {
-         const query = "INSERT INTO users (firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?);";
-         connection.query(query, [firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
+         const query = "INSERT INTO users (clientId, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?);";
+         connection.query(query, [clientId, firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
                if(err) reject(new Error(err.message));
-               else resolve(data);
+               else resolve({ clientId, data });
          });
       });
    }
@@ -96,10 +98,10 @@ class Users{
    //       });
    //    });
    // }
-   async validateLogin(username, password){
+   async validateLogin(email, password){
       const realPassword = await new Promise((resolve, reject) => {
-         const query = "SELECT password FROM users WHERE firstname = ?;";
-         connection.query(query, [firstname], (err, data) => {
+         const query = "SELECT password FROM users WHERE email = ?;";
+         connection.query(query, [email], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
@@ -302,5 +304,5 @@ class ServiceRequests {
 }
 
 
-module.exports = Users;
+module.exports = { Users, ServiceRequests };
  
