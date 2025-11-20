@@ -35,6 +35,21 @@ function connectToMYSQL(){
                password VARCHAR(100)
             );
          `);
+
+         connection.query(`
+            CREATE TABLE IF NOT EXISTS service_requests (
+               requestId INT AUTO_INCREMENT PRIMARY KEY,
+               clientId VARCHAR(50),
+               address VARCHAR(200),
+               cleanType VARCHAR(100),
+               roomQuantity INT,
+               preferredDateTime DATETIME,
+               proposedBudget DECIMAL(10,2),
+               optionalNote VARCHAR(500),
+               photos JSON,
+               FOREIGN KEY (clientId) REFERENCES users(clientId)
+            );
+         `);
          clearInterval(reconnectTimer);
       }
       console.log('db ' + connection.state);  
@@ -248,6 +263,42 @@ class Users{
    //    });
    //    return result;
    // } 
+}
+
+class ServiceRequests {
+   static getServiceRequestInstance() {
+        instance = instance ? instance : new ServiceRequests();
+        return instance;
+    }
+
+    async createServiceRequest(options) {
+        const {clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
+
+        await new Promise((resolve, reject) => {
+            const query = `
+                INSERT INTO service_requests 
+                (clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            `;
+
+            connection.query(
+                query,
+                [
+                    clientId,
+                    address,
+                    cleanType,
+                    roomQuantity,
+                    preferredDateTime,
+                    proposedBudget,
+                    optionalNote,
+                    JSON.stringify(photos)
+                ],
+                (err, data) => {
+                    if (err) reject(new Error(err.message));
+                    else resolve(data);
+                }
+            );
+        });
+    }
 }
 
 
