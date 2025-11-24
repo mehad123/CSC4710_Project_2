@@ -6,6 +6,9 @@ dotenv.config();
 
 let usersInstance = null;
 let serviceRequestsInstance = null;
+let serviceOrdersInstance = null;
+let billsInstance = null;
+
 let connection = null;
 let reconnectTimer = null;
 
@@ -16,7 +19,7 @@ connectToMYSQL();
 function connectToMYSQL(){
    connection = mysql.createConnection({
       host: process.env.DB_HOST,
-      user: process.env.DB_USER,        
+      user: process.env.DB_USER, 
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
       port: process.env.DB_PORT
@@ -28,7 +31,7 @@ function connectToMYSQL(){
       if (connection.state === "connected"){
          connection.query(`
             CREATE TABLE IF NOT EXISTS users (
-               clientId VARCHAR(50) primary key,
+               clientId VARCHAR(50) PRIMARY KEY, 
                firstname VARCHAR(50),
                lastname VARCHAR(50),
                email VARCHAR(100),
@@ -37,11 +40,13 @@ function connectToMYSQL(){
                password VARCHAR(100)
             );
          `);
-
+            
+         // id is mainly if ever we need order of items inserted. 
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_requests (
-               requestId INT AUTO_INCREMENT PRIMARY KEY,
-               clientId VARCHAR(50),
+               id INT AUTO_INCREMENT,
+               requestID VARCHAR(50) PRIMARY KEY,
+               clientID VARCHAR(50),
                address VARCHAR(200),
                cleanType VARCHAR(100),
                roomQuantity INT,
@@ -49,7 +54,23 @@ function connectToMYSQL(){
                proposedBudget DECIMAL(10,2),
                optionalNote VARCHAR(500),
                photos JSON,
+               chatHistory JSON,
                FOREIGN KEY (clientId) REFERENCES users(clientId)
+            );
+         `);
+         connection.query(`
+            CREATE TABLE IF NOT EXISTS service_orders (
+               id INT AUTO_INCREMENT,
+               orderId VARCHAR(50) PRIMARY KEY,
+               FOREIGN KEY (orderId) REFERENCES service_requests(requestID)
+            );
+         `);
+         connection.query(`
+            CREATE TABLE IF NOT EXISTS bills (
+               id INT AUTO_INCREMENT,
+               billId VARCHAR(50) PRIMARY KEY,
+               total DECIMAL(10, 2),
+               FOREIGN KEY (billId) REFERENCES service_orders(orderId)
             );
          `);
          clearInterval(reconnectTimer);
@@ -274,34 +295,34 @@ class ServiceRequests {
         return serviceRequestsInstance;
     }
 
-    async createServiceRequest(options) {
-        const {clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
+   async createServiceRequest(options) {
+      const {clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
 
-        await new Promise((resolve, reject) => {
-            const query = `
-                INSERT INTO service_requests 
-                (clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            `;
+      await new Promise((resolve, reject) => {
+         const query = `
+               INSERT INTO service_requests 
+               (clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+         `;
 
-            connection.query(
-                query,
-                [
-                    clientId,
-                    address,
-                    cleanType,
-                    roomQuantity,
-                    preferredDateTime,
-                    proposedBudget,
-                    optionalNote,
-                    JSON.stringify(photos)
-                ],
-                (err, data) => {
-                    if (err) reject(new Error(err.message));
-                    else resolve(data);
-                }
-            );
-        });
-    }
+         connection.query(
+               query,
+               [
+                  clientId,
+                  address,
+                  cleanType,
+                  roomQuantity,
+                  preferredDateTime,
+                  proposedBudget,
+                  optionalNote,
+                  JSON.stringify(photos)
+               ],
+               (err, data) => {
+                  if (err) reject(new Error(err.message));
+                  else resolve(data);
+               }
+         );
+      });
+   }
 
    async getRequestsByClient(clientId) {
       const result = await new Promise((resolve, reject) => {
@@ -316,6 +337,33 @@ class ServiceRequests {
 
 }
 
+class ServiceOrders{
+   static getServiceOrdersInstance() {
+        serviceOrdersInstance = serviceOrdersInstance ? serviceOrdersInstance : new ServiceOrders();
+        return serviceOrdersInstance;
+   }
+
+   async createServiceOrder(options) {
+      const {orderID} = options;
+
+      await new Promise((resolve, reject) => {
+         const query = `INSERT INTO service_orders (orderId,) VALUES (?);`;
+         connection.query(query, [orderID], (err, data) => {
+               if (err) reject(new Error(err.message));
+               else resolve(data);
+            }
+         );
+      });
+   }
+
+}
+
+class Bills{
+   static getBillsInstance() {
+        billsInstance = billsInstance ? billsInstance : new Bills();
+        return billsInstance;
+    }
+}
 
 module.exports = { Users, ServiceRequests };
  
