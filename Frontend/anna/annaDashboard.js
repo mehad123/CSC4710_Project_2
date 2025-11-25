@@ -1,7 +1,10 @@
 const backendURL = "http://localhost:5050";
 
-
 document.addEventListener('DOMContentLoaded', async () => {
+    const response = await fetch(backendURL + "/service-requests");
+    const SRs = await response.json()
+    console.log("e")
+    console.log(SRs)
     loadTable([
         {
             "name": "phil",
