@@ -1,13 +1,13 @@
-const express = require('express');
-const cors = require ('cors');
-const dotenv = require('dotenv');
-const multer = require("multer");
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import multer from "multer";
+import { Users, ServiceRequests, ServiceOrders, Bills } from './dbService.js';
 
 dotenv.config();
 const multerFormParser = multer();
 
 const app = express();
-const { Users, ServiceRequests, ServiceOrders, Bills, ServiceOrders } = require('./dbService');
 
 app.use(cors());
 app.use(express.json());
@@ -71,6 +71,10 @@ const getOneServiceRequest = handleError(async (request, response) => {
     const result = await serviceRequests.getOneRequestByClient(requestID)
     response.json(result)
 })
+const getAllServiceRequests = handleError(async (request, response) => {
+    const result = await serviceRequests.getAllServiceRequests();
+    response.json(result)
+})
 
 const updateServiceRequest = handleError(async (request, response) =>{
     const {requestID} = request.paramsl
@@ -79,13 +83,14 @@ const updateServiceRequest = handleError(async (request, response) =>{
     response.send("ok")
 })
 
+app.get("/service-requests", getAllServiceRequests);
 app.post("/service-requests", multerFormParser.array("photos", 5), createServiceRequest);
 app.get("/service-requests/:clientID", getServiceRequests);
 app.get("/service-requests/:requestID", getOneServiceRequest);
 app.put("/service-requests/:requestID", updateServiceRequest);
 
 app.post('/users', multerFormParser.none(),addUser);
-app.post("/users/login", multerFormParser.none(), logInUser);
+app.post("/users/login", multerFormParser.none(), logInUser); 
 
 app.listen(process.env.APP_PORT, 
     () => {

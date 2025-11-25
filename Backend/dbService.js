@@ -1,7 +1,8 @@
-const mysql = require('mysql');
-const dotenv = require('dotenv');
-const bcrypt = require("bcrypt");
-const { v4: uuidv4 } = require('uuid');
+import mysql from 'mysql';
+import dotenv from 'dotenv';
+import bcrypt from "bcrypt";
+import pkg from 'uuid';
+const { v4: uuidv4 } = pkg;
 dotenv.config(); 
 
 let usersInstance = null;
@@ -31,7 +32,6 @@ function connectToMYSQL(){
       if (connection.state === "connected"){
          connection.query(`
             CREATE TABLE IF NOT EXISTS users (
-               clientId VARCHAR(50) PRIMARY KEY, 
                clientID VARCHAR(50) PRIMARY KEY, 
                firstname VARCHAR(50),
                lastname VARCHAR(50),
@@ -45,7 +45,8 @@ function connectToMYSQL(){
          // id is mainly if ever we need order of items inserted. 
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_requests (
-               id INT AUTO_INCREMENT,
+               id INT AUTO_INCREMENT UNIQUE,
+               status VARCHAR(50),
                requestID VARCHAR(50) PRIMARY KEY,
                clientID VARCHAR(50),
                address VARCHAR(200),
@@ -56,20 +57,19 @@ function connectToMYSQL(){
                optionalNote VARCHAR(500),
                photos JSON,
                chatHistory JSON,
-               FOREIGN KEY (clientId) REFERENCES users(clientId)
                FOREIGN KEY (clientID) REFERENCES users(clientID)
             );
          `);
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_orders (
-               id INT AUTO_INCREMENT,
+               id INT AUTO_INCREMENT UNIQUE,
                orderID VARCHAR(50) PRIMARY KEY,
                FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
             );
          `);
          connection.query(`
             CREATE TABLE IF NOT EXISTS bills (
-               id INT AUTO_INCREMENT,
+               id INT AUTO_INCREMENT UNIQUE,
                billID VARCHAR(50) PRIMARY KEY,
                total DECIMAL(10, 2),
                FOREIGN KEY (billID) REFERENCES service_orders(orderID)
@@ -77,17 +77,17 @@ function connectToMYSQL(){
          `);
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_orders (
-               id INT AUTO_INCREMENT,
-               orderId VARCHAR(50) PRIMARY KEY,
-               FOREIGN KEY (orderId) REFERENCES service_requests(requestID)
+               id INT AUTO_INCREMENT UNIQUE,
+               orderID VARCHAR(50) PRIMARY KEY,
+               FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
             );
          `);
          connection.query(`
             CREATE TABLE IF NOT EXISTS bills (
-               id INT AUTO_INCREMENT,
-               billId VARCHAR(50) PRIMARY KEY,
+               id INT AUTO_INCREMENT UNIQUE,
+               billID VARCHAR(50) PRIMARY KEY,
                total DECIMAL(10, 2),
-               FOREIGN KEY (billId) REFERENCES service_orders(orderId)
+               FOREIGN KEY (billID) REFERENCES service_orders(orderID)
             );
          `);
          clearInterval(reconnectTimer);
@@ -104,20 +104,20 @@ class Users{
    }
    async createUser(options){
       const {firstname, lastname, email, address, phoneNumber, password} = options;
-      const clientId = uuidv4();
+      const clientID = uuidv4();
 
       const hashedPass = await bcrypt.hash(password, 10);
       await new Promise((resolve, reject) => {
-         const query = "INSERT INTO users (clientId, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?);";
-         connection.query(query, [clientId, firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
+         const query = "INSERT INTO users (clientID, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?);";
+         connection.query(query, [clientID, firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
                if(err) reject(new Error(err.message));
-               else resolve({ clientId, data });
+               else resolve({ clientID, data });
          });
       });
    }
    async validateLogin(email, password){
       const realPassword = await new Promise((resolve, reject) => {
-         const query = "SELECT clientId, password FROM users WHERE email = ?;";
+         const query = "SELECT clientID, password FROM users WHERE email = ?;";
          connection.query(query, [email], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
@@ -128,7 +128,7 @@ class Users{
          return {success: false };
       }
       
-      return { success: true, clientId: realPassword[0].clientId };
+      return { success: true, clientID: realPassword[0].clientID };
    }
 
    async getAllUsers(){
@@ -168,18 +168,18 @@ class ServiceRequests {
     }
 
    async createServiceRequest(options) {
-      const {clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
+      const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
 
       await new Promise((resolve, reject) => {
          const query = `
                INSERT INTO service_requests 
-               (clientId, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+               (clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
          `;
 
          connection.query(
                query,
                [
-                  clientId,
+                  clientID,
                   address,
                   cleanType,
                   roomQuantity,
@@ -206,17 +206,26 @@ class ServiceRequests {
       });
       return result;
    }
-   async getRequestsByClient(clientId) {
+   async getRequestsByClient(clientID) {
       const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM service_requests WHERE clientId = ? ORDER BY preferredDateTime DESC`;
-         connection.query(query, [clientId], (err, data) => {
+         const query = `SELECT * FROM service_requests WHERE clientID = ? ORDER BY preferredDateTime DESC`;
+         connection.query(query, [clientID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
       return result;
    }
-
+   async getAllServiceRequests(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM service_requests ORDER BY preferredDateTime DESC`;
+         connection.query(query, [],(err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
+   }
    async updateServiceRequest(updatedFields, requestID){
       const fields = Object.keys(updatedFields);
       const newValues = fields.map(key => updatedFields[key]);
@@ -241,7 +250,7 @@ class ServiceOrders{
       const {orderID} = options;
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO service_orders (orderId,) VALUES (?);`;
+         const query = `INSERT INTO service_orders (orderID,) VALUES (?);`;
          connection.query(query, [orderID], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
@@ -257,13 +266,13 @@ class Bills{
         billsInstance = billsInstance ? billsInstance : new Bills();
         return billsInstance;
     }
-}
-   async createServiceOrder(options) {
-      const {orderID} = options;
+
+   async createBill(options) {
+      const {billID} = options;
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO service_orders (orderId,) VALUES (?);`;
-         connection.query(query, [orderID], (err, data) => {
+         const query = `INSERT INTO service_orders (billID,) VALUES (?);`;
+         connection.query(query, [billID], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
             }
@@ -273,12 +282,5 @@ class Bills{
 
 }
 
-class Bills{
-   static getBillsInstance() {
-        billsInstance = billsInstance ? billsInstance : new Bills();
-        return billsInstance;
-    }
-}
-
-module.exports = { Users, ServiceRequests, ServiceOrders, Bills };
+export { Users, ServiceRequests, ServiceOrders, Bills };
  
