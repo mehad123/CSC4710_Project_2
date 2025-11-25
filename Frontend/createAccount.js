@@ -4,8 +4,6 @@ let timeoutID;
 
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    console.log(form);
-    console.log(new FormData(form));
     const response = await fetch("http://localhost:5050/users",{
         method: "POST",
         body: new FormData(form)
