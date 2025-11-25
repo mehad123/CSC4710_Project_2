@@ -32,6 +32,7 @@ function connectToMYSQL(){
          connection.query(`
             CREATE TABLE IF NOT EXISTS users (
                clientId VARCHAR(50) PRIMARY KEY, 
+               clientID VARCHAR(50) PRIMARY KEY, 
                firstname VARCHAR(50),
                lastname VARCHAR(50),
                email VARCHAR(100),
@@ -56,6 +57,22 @@ function connectToMYSQL(){
                photos JSON,
                chatHistory JSON,
                FOREIGN KEY (clientId) REFERENCES users(clientId)
+               FOREIGN KEY (clientID) REFERENCES users(clientID)
+            );
+         `);
+         connection.query(`
+            CREATE TABLE IF NOT EXISTS service_orders (
+               id INT AUTO_INCREMENT,
+               orderID VARCHAR(50) PRIMARY KEY,
+               FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
+            );
+         `);
+         connection.query(`
+            CREATE TABLE IF NOT EXISTS bills (
+               id INT AUTO_INCREMENT,
+               billID VARCHAR(50) PRIMARY KEY,
+               total DECIMAL(10, 2),
+               FOREIGN KEY (billID) REFERENCES service_orders(orderID)
             );
          `);
          connection.query(`
@@ -98,28 +115,6 @@ class Users{
          });
       });
    }
-
-   // async deleteUser(username){
-   //    await new Promise((resolve, reject) => {
-   //       const query = "DELETE FROM users WHERE username = ?;";
-   //       connection.query(query, [username], (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else resolve(data);
-   //       });
-   //    });
-   // }
-   // async updateUser(username, fields){
-   //    const colUpdates = Object.entries(fields).map(pair=>{
-   //       return `${pair[0]} = ${typeof pair[1] === "number" ? pair[1] : `'${pair[1]}'`}`;
-   //    }).join(", ");
-   //    await new Promise((resolve, reject) => {
-   //       const query = `UPDATE users SET ${colUpdates} WHERE username = ?;`;
-   //       connection.query(query, [username], (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else resolve(data);
-   //       });
-   //    });
-   // }
    async validateLogin(email, password){
       const realPassword = await new Promise((resolve, reject) => {
          const query = "SELECT clientId, password FROM users WHERE email = ?;";
@@ -132,13 +127,6 @@ class Users{
       if (!validPass){
          return {success: false };
       }
-      // await new Promise((resolve, reject) => {
-      //    const query = "UPDATE users SET signintime = ? WHERE username = ?;";
-      //    connection.query(query, [new Date(), username], (err, data) => {
-      //          if(err) reject(new Error(err.message));
-      //          else resolve(data);
-      //    });
-      // });
       
       return { success: true, clientId: realPassword[0].clientId };
    }
@@ -171,122 +159,6 @@ class Users{
       });
       return result;
    }
-
-   // async getUsersBySalary(minSalary, maxSalary){
-   //    const result = await new Promise((resolve, reject) => {
-   //       let query = `SELECT * FROM users WHERE 1=1`;
-   //       let params = [];
-   //       if (minSalary) {
-   //          query += " AND salary > ?";
-   //          params.push(minSalary);
-   //       }
-   //       if (maxSalary) {
-   //          query += " AND salary < ?";
-   //          params.push(maxSalary);
-   //       }
-   //       connection.query(query, params, (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else resolve(data);
-   //       });
-   //    });
-   //    result.forEach(row => {
-   //       delete row["password"];
-   //    });
-   //    return result;
-   // }
-
-   // async getUsersByAge(minAge, maxAge){
-   //    const result = await new Promise((resolve, reject) => {
-   //       let query = `SELECT * FROM users WHERE 1=1`;
-   //       let params = [];
-   //       if (minAge){
-   //          query += " AND age > ?";
-   //          params.push(minAge);
-   //       } 
-   //       if (maxAge){
-   //          query += " AND age < ?";
-   //          params.push(maxAge);
-   //       } 
-   //       connection.query(query, params, (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else resolve(data);
-   //       });
-   //    });
-   //    result.forEach(row => {
-   //       delete row["password"];
-   //    });
-   //    return result;
-   // }
-
-   // async getUsersAfterReg(username){
-   //    let dayRegistered = await new Promise((resolve, reject) => {
-   //       const query = `SELECT registerday FROM users WHERE username = ?;`;
-   //       connection.query(query, [username], (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else if(!data[0]) reject(new Error("no user"));
-   //             else resolve(data[0]["registerday"]);
-   //       });
-   //    });
-   //    const result = await new Promise((resolve, reject) => {
-   //       const query = `SELECT * FROM users WHERE DATE(registerday) > DATE(?);`;
-   //       connection.query(query, [dayRegistered], (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else resolve(data);
-   //       });
-   //    });
-   //    result.forEach(row => {
-   //       delete row["password"];
-   //    });
-   //    return result;
-   // }
-   // async getUsersSameReg(username){
-   //    let dayRegistered = await new Promise((resolve, reject) => {
-   //       const query = `SELECT registerday FROM users WHERE username = ?;`;
-   //       connection.query(query, [username], (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else if(!data[0]) reject(new Error("no user"));
-   //             else resolve(data[0]["registerday"]);
-   //       });
-   //    });
-   //    const result = await new Promise((resolve, reject) => {
-   //       const query = `SELECT * FROM users WHERE DATE(registerday) = DATE(?);`;
-   //       connection.query(query, [dayRegistered], (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else resolve(data);
-   //       });
-   //    });
-   //    result.forEach(row => {
-   //       delete row["password"];
-   //    });
-   //    return result;
-   // }
-   // async getUsersToday(){
-   //    const result = await new Promise((resolve, reject) => {
-   //       const query = `SELECT * FROM users WHERE DATE(registerday) = CURDATE();`;
-   //       connection.query(query, (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else resolve(data);
-   //       });
-   //    });
-   //    result.forEach(row => {
-   //       delete row["password"];
-   //    });
-   //    return result;
-   // }
-
-   // async getUsersNoSignIn(){
-   //    const result = await new Promise((resolve, reject) => {
-   //       const query = `SELECT * FROM users WHERE signintime IS NULL;`;
-   //       connection.query(query, (err, data) => {
-   //             if(err) reject(new Error(err.message));
-   //             else resolve(data);
-   //       });
-   //    });
-   //    result.forEach(row => {
-   //       delete row["password"];
-   //    });
-   //    return result;
-   // } 
 }
 
 class ServiceRequests {
@@ -324,6 +196,16 @@ class ServiceRequests {
       });
    }
 
+   async getOneRequestByClient(requestID){
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM service_requests WHERE requestID = ? ORDER BY preferredDateTime DESC`;
+         connection.query(query, [requestID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
+   }
    async getRequestsByClient(clientId) {
       const result = await new Promise((resolve, reject) => {
          const query = `SELECT * FROM service_requests WHERE clientId = ? ORDER BY preferredDateTime DESC`;
@@ -335,6 +217,19 @@ class ServiceRequests {
       return result;
    }
 
+   async updateServiceRequest(updatedFields, requestID){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
+
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE ${formattedFieldsForQuery} FROM service_requests WHERE requestID = ? ORDER BY preferredDateTime DESC`;
+         connection.query(query, [...newValues, requestID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+   }
 }
 
 class ServiceOrders{
@@ -342,7 +237,27 @@ class ServiceOrders{
         serviceOrdersInstance = serviceOrdersInstance ? serviceOrdersInstance : new ServiceOrders();
         return serviceOrdersInstance;
    }
+   async createServiceOrder(options) {
+      const {orderID} = options;
 
+      await new Promise((resolve, reject) => {
+         const query = `INSERT INTO service_orders (orderId,) VALUES (?);`;
+         connection.query(query, [orderID], (err, data) => {
+               if (err) reject(new Error(err.message));
+               else resolve(data);
+            }
+         );
+      });
+   }
+
+}
+
+class Bills{
+   static getBillsInstance() {
+        billsInstance = billsInstance ? billsInstance : new Bills();
+        return billsInstance;
+    }
+}
    async createServiceOrder(options) {
       const {orderID} = options;
 
@@ -365,5 +280,5 @@ class Bills{
     }
 }
 
-module.exports = { Users, ServiceRequests };
+module.exports = { Users, ServiceRequests, ServiceOrders, Bills };
  
