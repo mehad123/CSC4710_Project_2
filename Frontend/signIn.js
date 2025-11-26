@@ -24,9 +24,15 @@ form.addEventListener("submit", async (e)=>{
         if (data && data.success) {
             console.log("Login successful!");
             alert("Login successful!");
-            sessionStorage.setItem("clientId", data.clientId);
+            sessionStorage.setItem("clientID", data.clientID);
             sessionStorage.setItem("loggedIn", email);
-            window.location.href = "clientDashboard.html";
+
+            data.clientID === "anna" 
+            ? 
+                window.location.href = "anna/annaDashboard.html"
+            :
+                window.location.href = "clients/clientDashboard.hml";
+
         } else {
             console.error("Sign-in failed:", data.message || data);
             alert("Invalid email or password!");
