@@ -116,7 +116,7 @@ class Users{
          });
       });
 
-   }
+   }client
    async validateLogin(email, password){
       const realPassword = await new Promise((resolve, reject) => {
          const query = "SELECT clientID, password FROM users WHERE email = ?;";
