@@ -10,13 +10,18 @@ function loadTable(queries){
     const clients = document.getElementById("client-list");
     let content = "";
     queries.forEach(c => {
+        c["requestIDs"] = ["123"]
         content += `
         <li>
             <section class='client'>
                 <ul>
                     <li>Name: ${c["firstname"]} ${c["lastname"]}</li>
                     <li>Client ID: ${c["clientID"]}</li>
-                    <li><ul>${c["requestIDs"].map(id=>`<li>${id}</li>`).join("")}</ul></li>
+                    <li>Service Requests:<ul>
+                    ${c["requestIDs"].map(id=>
+                        `<li><a href="annaSR.html?requestID=${id}">${id}</a></li>`
+                    ).join("")}
+                    </ul></li>
                 </ul>
             </section>
         </li>`;
