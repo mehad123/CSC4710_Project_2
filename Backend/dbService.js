@@ -33,6 +33,7 @@ function connectToMYSQL(){
          connection.query(`
             CREATE TABLE IF NOT EXISTS users (
                clientID VARCHAR(50) PRIMARY KEY, 
+               requestIDs JSON,
                firstname VARCHAR(50),
                lastname VARCHAR(50),
                email VARCHAR(100),
@@ -65,7 +66,7 @@ function connectToMYSQL(){
                id INT AUTO_INCREMENT UNIQUE,
                orderID VARCHAR(50) PRIMARY KEY,
                FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
-            );
+            ); 
          `);
          connection.query(`
             CREATE TABLE IF NOT EXISTS bills (
@@ -108,12 +109,13 @@ class Users{
 
       const hashedPass = await bcrypt.hash(password, 10);
       await new Promise((resolve, reject) => {
-         const query = "INSERT INTO users (clientID, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?);";
-         connection.query(query, [clientID, firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
+         const query = "INSERT INTO users (clientID, requestIDs, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+         connection.query(query, [clientID, "[]", firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
                if(err) reject(new Error(err.message));
-               else resolve({ clientID, data });
+               else resolve({ data });
          });
       });
+
    }
    async validateLogin(email, password){
       const realPassword = await new Promise((resolve, reject) => {
@@ -133,33 +135,19 @@ class Users{
 
    async getAllUsers(){
       const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM users`;
+         const query = `SELECT firstname, lastname, clientID, requestIDs FROM users`;
          connection.query(query, (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
-      result.forEach(row => {
-         delete row["password"];
-      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
       return result;
-   }
+   }  
 
-   async getUsersByName(name, type){
-      //type is fully controlled by backend no risk of sql injection attack 
-      const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM users WHERE ${type} = ?;`;
-         connection.query(query, [name], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-      result.forEach(row => {
-         delete row["password"];
-      });
-      return result;
-   }
-}
+} 
 
 class ServiceRequests {
    static getServiceRequestInstance() {
