@@ -61,6 +61,7 @@ function connectToMYSQL(){
                FOREIGN KEY (clientID) REFERENCES users(clientID)
             );
          `);
+         
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_orders (
                id INT AUTO_INCREMENT UNIQUE,
@@ -151,41 +152,33 @@ class Users{
       })
       return result;
    }  
-
+ 
 } 
 
 class ServiceRequests {
    static getServiceRequestInstance() {
         serviceRequestsInstance = serviceRequestsInstance ? serviceRequestsInstance : new ServiceRequests();
         return serviceRequestsInstance;
-    }
+    } 
 
    async createServiceRequest(options) {
       const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
-
+      
       await new Promise((resolve, reject) => {
          const query = `
                INSERT INTO service_requests 
-               (clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+               (requestID, clientID, status, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos, chatHistory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          `;
 
-         connection.query(
-               query,
-               [
-                  clientID,
-                  address,
-                  cleanType,
-                  roomQuantity,
-                  preferredDateTime,
-                  proposedBudget,
-                  optionalNote,
-                  JSON.stringify(photos)
-               ],
-               (err, data) => {
-                  if (err) reject(new Error(err.message));
-                  else resolve(data);
-               }
-         );
+         // status can be:
+         //    1) ORDERING
+         //    2) BILLING
+         //    3) CANCELED
+         //    4) COMPLETE
+         connection.query(query, [uuidv4(), clientID, "ORDERING", address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, JSON.stringify(photos), "[]"], (err, data) => {
+            if (err) reject(new Error(err.message));
+            else resolve(data);
+         });
       });
    }
 
@@ -225,7 +218,7 @@ class ServiceRequests {
 
       const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
       await new Promise((resolve, reject) => {
-         const query = `UPDATE ${formattedFieldsForQuery} FROM service_requests WHERE requestID = ? ORDER BY preferredDateTime DESC`;
+         const query = `UPDATE ${formattedFieldsForQuery} FROM service_requests WHERE requestID = ?`;
          connection.query(query, [...newValues, requestID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);

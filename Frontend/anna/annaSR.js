@@ -1,17 +1,26 @@
 const backendURL = "http://localhost:5050";
 
+let allowChanges = false;
+let annasTurn;
+let serviceRequest;
 document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const requestID = params.get("requestID");
 
     const res = await fetch(`${backendURL}/service-requests/${requestID}`);
-    const serviceRequest = await res.json();
+    serviceRequest = await res.json();
+    annasTurn = serviceRequest["chatHistory"].length % i == 0;
     loadForm(serviceRequest);
     loadChat(serviceRequest);
 });
 
+function toggleEdit(){
+    allowChanges = !allowChanges;
+    loadForm(serviceRequest);
+}
 function loadForm(SR){
     const srElem = document.getElementById("SR-info");
+    
     let content = 
      `
     <form>
@@ -24,19 +33,52 @@ function loadForm(SR){
                 <li>Status: ${SR["status"]}</li>
             </ul>
         </fieldset>
+        ${
+            allowChanges && annasTurn && !["COMPLETED", "CANCELED"].includes(SR["status"])
+            ? 
+            `
+                <fieldset>
+                    <legend>Fields to Modify</legend>
+                    <ul>
+                        <li>Address: <input name="address" type="text" value=${SR["address"]}></li>
+                        <li>Type of Cleaning: <input name="cleanType" type="text" value=${SR["cleanType"]}></li>
+                        <li>Number of Rooms: <input name="roomQuantity" type="number" value=${SR["roomQuantity"]}></li>
+                        <li>Preferred Arrival: <input name="preferredDateTime" type="text" value=${SR["preferredDateTime"]}></li>
+                        <li>Price: <input name="proposedBudget" type="number" value=${SR["proposedBudget"]}></li>
+                        <li>Note: <input name="optionalNote" type="textarea" value=${SR["optionalNote"]}></li>
+                    </ul>
+                    <button type="submit">Submit Changes</button>
+                </fieldset>
+            `
+            :
+            `
+                <fieldset>
+                    <legend>Fields to Modify</legend>
+                    <ul>
+                        <li>Address: ${SR["address"]}</li>
+                        <li>Type of Cleaning: ${SR["cleanType"]}</li>
+                        <li>Number of Rooms: ${SR["roomQuantity"]}</li>
+                        <li>Preferred Arrival: ${SR["preferredDateTime"]}</li>
+                        <li>Price: ${SR["proposedBudget"]}</li>
+                        <li>Note: <p>${SR["optionalNote"] || "None"}</p></li>
+                    </ul>
+                </fieldset>
+            `
+        }
+        ${annasTurn && !["COMPLETED", "CANCELED"].includes(SR["status"]) && '<button id="toggle" onclick="toggleEdit()">Toggle Edit</button>'}
+
+        ${SR["photos"].length > 0 &&
+        `
         <fieldset>
-            <legend>Fields to Modify</legend>
+            <legend>Images</legend>
             <ul>
-                <li>Address: ${SR["address"]}</li>
-                <li>Type of Cleaning: ${SR["cleanType"]}</li>
-                <li>Number of Rooms: ${SR["roomQuantity"]}</li>
-                <li>Preferred Arrival: ${SR["preferredDateTime"]}</li>
-                <li>Price: ${SR["proposedBudget"]}</li>
-                <li>Note: <p>${SR["optionalNote"] || "None"}</p></li>
+                ${SR["photos"].map(url => `<img src=${url} alt="photo">`)}
             </ul>
         </fieldset>
+        `
+        }
     </form>
-    `
+    `;
     srElem.innerHTML = content;
 }
 
@@ -44,7 +86,7 @@ function loadChat(SR){
     const chat = SR["chatHistory"];
     const chatElem = document.getElementById("chat");
 
-    chat.forEach(msg => {
+    chat.forEach(msg => {  
         content += 
         `
         <section class="message">
@@ -55,7 +97,7 @@ function loadChat(SR){
         </section>
         `
     });
-    if (chat.length % 2 && SR["status"] != "complete"){
+    if (annasTurn && !["COMPLETED", "CANCELED"].includes(SR["status"])){
         content += 
         `
         <section class="send-message">
