@@ -3,6 +3,10 @@ const backendURL = "http://localhost:5050";
 let allowChanges = false;
 let annasTurn;
 let serviceRequest;
+
+const srForm = document.getElementById("sr-info");
+const chatElem = document.getElementById("chat");
+
 document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const requestID = params.get("requestID");
@@ -14,16 +18,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadChat(serviceRequest);
 });
 
+
 function toggleEdit(){
     allowChanges = !allowChanges;
     loadForm(serviceRequest);
 }
+
+async function send(type, note){
+    const formData = new FormData(srForm);
+
+    serviceRequest["chatHistory"] = JSON.stringify([...serviceRequest["chatHistory"], {
+        "state": type,
+        "note": note
+    }]);
+    Object.keys(serviceRequest).forEach(field => {
+        !formData.has(field) && formData.append(field, serviceRequest[field]);
+    })
+    
+    // if (type === "ACCEPTED"){
+
+    // }
+    // if (type === "REJECTED"){
+
+    // }
+    // if (type === "RENEGOTIATING"){
+        
+    // }
+    const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {method: "POST", body: formData});
+    const newRequest = await response.json();
+    if (!newRequest.success){
+        alert("Failed to change service request.");
+        return
+    }
+    alert("Changes submitted!");
+    serviceRequest = newRequest;
+    annasTurn = false
+    allowChanges= false
+    loadForm(newRequest);
+    loadChat(newRequest);
+}
 function loadForm(SR){
-    const srElem = document.getElementById("SR-info");
     
     let content = 
      `
-    <form>
         <h2>Service Request Info</h2>
         <fieldset>
             <legend>General Information</legend>
@@ -47,7 +84,6 @@ function loadForm(SR){
                         <li>Price: <input name="proposedBudget" type="number" value=${SR["proposedBudget"]}></li>
                         <li>Note: <input name="optionalNote" type="textarea" value=${SR["optionalNote"]}></li>
                     </ul>
-                    <button type="submit">Submit Changes</button>
                 </fieldset>
             `
             :
@@ -65,26 +101,20 @@ function loadForm(SR){
                 </fieldset>
             `
         }
-        ${annasTurn && !["COMPLETED", "CANCELED"].includes(SR["status"]) && '<button id="toggle" onclick="toggleEdit()">Toggle Edit</button>'}
-
         ${SR["photos"].length > 0 &&
-        `
-        <fieldset>
+        `<fieldset>
             <legend>Images</legend>
             <ul>
                 ${SR["photos"].map(url => `<img src=${url} alt="photo">`)}
             </ul>
         </fieldset>
-        `
-        }
-    </form>
+        `}
     `;
-    srElem.innerHTML = content;
+    srForm.innerHTML = content;
 }
 
 function loadChat(SR){
     const chat = SR["chatHistory"];
-    const chatElem = document.getElementById("chat");
 
     chat.forEach(msg => {  
         content += 
@@ -101,10 +131,9 @@ function loadChat(SR){
         content += 
         `
         <section class="send-message">
-            <input type="textarea" placeholder="Include note with decision">
-            <button>Accept</button>
-            <button>Reject</button>
-            <button>Renegotiate</button>
+            <button onclick="send('accept')">Accept</button>
+            <button onclick="send('reject')">Reject</button>
+            <button onclick="send('renegotiate')">Renegotiate</button>
         </section>
         `
     }
