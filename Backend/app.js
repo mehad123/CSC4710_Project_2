@@ -39,6 +39,11 @@ const logInUser = handleError(async (request, response) => {
     response.json(result);
 });
 
+const getAllUsers = handleError(async (request, response) => {
+    const result = await users.getAllUsers();
+    response.json(result)
+})
+
 const createServiceRequest = handleError(async (req, res) => {
     const clientID = req.body.clientID;
     const { address, cleanType, roomQuantity, prefDate, budget, note } = req.body;
@@ -83,14 +88,16 @@ const updateServiceRequest = handleError(async (request, response) =>{
     response.send("ok")
 })
 
+app.get("/users", getAllUsers)
+app.post('/users', multerFormParser.none(),addUser);
+app.post("/users/login", multerFormParser.none(), logInUser); 
+
 app.get("/service-requests", getAllServiceRequests);
 app.post("/service-requests", multerFormParser.array("photos", 5), createServiceRequest);
 app.get("/service-requests/:clientID", getServiceRequests);
 app.get("/service-requests/:requestID", getOneServiceRequest);
 app.put("/service-requests/:requestID", updateServiceRequest);
 
-app.post('/users', multerFormParser.none(),addUser);
-app.post("/users/login", multerFormParser.none(), logInUser); 
 
 app.listen(process.env.APP_PORT, 
     () => {

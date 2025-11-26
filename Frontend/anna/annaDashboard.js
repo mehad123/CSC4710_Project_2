@@ -1,46 +1,27 @@
 const backendURL = "http://localhost:5050";
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const response = await fetch(backendURL + "/service-requests");
-    const SRs = await response.json()
-    console.log("e")
-    console.log(SRs)
-    loadTable([
-        {
-            "name": "phil",
-            "SRlist": ["s73bq", "ded2dn"]
-        },
-        {
-            "name": "sam",
-            "SRlist": ["e328hdq"]
-        },
-        {
-            "name": "emma",
-            "SRlist": ["sw32d", "dnewu3", "sh392e", "dn389", "denu923"]
-        },
-        {
-            "name": "craig",
-            "SRlist": ["dewwed3", "s29dd", "s29do"]
-        }
-    ]);
+    const response = await fetch(backendURL + "/users");
+    const clients = await response.json()
+    loadTable(clients);
 });
 
 function loadTable(queries){
     const clients = document.getElementById("client-list");
     let content = "";
     queries.forEach(c => {
+        c["requestIDs"] = ["123"]
         content += `
         <li>
             <section class='client'>
-                Client Name: ${c["name"]}
-                <br/>
-                Client Service Requests: 
                 <ul>
-                    ${
-                        c["SRlist"].map(elem=>{
-                            return `<li><a href='annaSR.html?SR=${elem}'>${elem}</a></li>`
-                        }).join("")
-                    }
+                    <li>Name: ${c["firstname"]} ${c["lastname"]}</li>
+                    <li>Client ID: ${c["clientID"]}</li>
+                    <li>Service Requests:<ul>
+                    ${c["requestIDs"].map(id=>
+                        `<li><a href="annaSR.html?requestID=${id}">${id}</a></li>`
+                    ).join("")}
+                    </ul></li>
                 </ul>
             </section>
         </li>`;

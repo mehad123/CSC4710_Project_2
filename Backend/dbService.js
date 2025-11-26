@@ -33,6 +33,7 @@ function connectToMYSQL(){
          connection.query(`
             CREATE TABLE IF NOT EXISTS users (
                clientID VARCHAR(50) PRIMARY KEY, 
+               requestIDs JSON,
                firstname VARCHAR(50),
                lastname VARCHAR(50),
                email VARCHAR(100),
@@ -60,12 +61,13 @@ function connectToMYSQL(){
                FOREIGN KEY (clientID) REFERENCES users(clientID)
             );
          `);
+         
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_orders (
                id INT AUTO_INCREMENT UNIQUE,
                orderID VARCHAR(50) PRIMARY KEY,
                FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
-            );
+            ); 
          `);
          connection.query(`
             CREATE TABLE IF NOT EXISTS bills (
@@ -108,14 +110,20 @@ class Users{
 
       const hashedPass = await bcrypt.hash(password, 10);
       await new Promise((resolve, reject) => {
-         const query = "INSERT INTO users (clientID, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?);";
-         connection.query(query, [clientID, firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
+         const query = "INSERT INTO users (clientID, requestIDs, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+         connection.query(query, [clientID, "[]", firstname, lastname, email, address, phoneNumber, hashedPass], (err, data) => {
                if(err) reject(new Error(err.message));
-               else resolve({ clientID, data });
+               else resolve({ data });
          });
       });
-   }
+
+   }client
    async validateLogin(email, password){
+      //are we anna? this is temporary
+      if (email === "anna" && password === "123"){
+         return { success: true, clientID: "anna" };
+      }
+
       const realPassword = await new Promise((resolve, reject) => {
          const query = "SELECT clientID, password FROM users WHERE email = ?;";
          connection.query(query, [email], (err, data) => {
@@ -133,66 +141,44 @@ class Users{
 
    async getAllUsers(){
       const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM users`;
+         const query = `SELECT firstname, lastname, clientID, requestIDs FROM users`;
          connection.query(query, (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
-      result.forEach(row => {
-         delete row["password"];
-      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
       return result;
-   }
-
-   async getUsersByName(name, type){
-      //type is fully controlled by backend no risk of sql injection attack 
-      const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM users WHERE ${type} = ?;`;
-         connection.query(query, [name], (err, data) => {
-               if(err) reject(new Error(err.message));
-               else resolve(data);
-         });
-      });
-      result.forEach(row => {
-         delete row["password"];
-      });
-      return result;
-   }
-}
+   }  
+ 
+} 
 
 class ServiceRequests {
    static getServiceRequestInstance() {
         serviceRequestsInstance = serviceRequestsInstance ? serviceRequestsInstance : new ServiceRequests();
         return serviceRequestsInstance;
-    }
+    } 
 
    async createServiceRequest(options) {
       const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
-
+      
       await new Promise((resolve, reject) => {
          const query = `
                INSERT INTO service_requests 
-               (clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+               (requestID, clientID, status, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos, chatHistory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          `;
 
-         connection.query(
-               query,
-               [
-                  clientID,
-                  address,
-                  cleanType,
-                  roomQuantity,
-                  preferredDateTime,
-                  proposedBudget,
-                  optionalNote,
-                  JSON.stringify(photos)
-               ],
-               (err, data) => {
-                  if (err) reject(new Error(err.message));
-                  else resolve(data);
-               }
-         );
+         // status can be:
+         //    1) ORDERING
+         //    2) BILLING
+         //    3) CANCELED
+         //    4) COMPLETE
+         connection.query(query, [uuidv4(), clientID, "ORDERING", address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, JSON.stringify(photos), "[]"], (err, data) => {
+            if (err) reject(new Error(err.message));
+            else resolve(data);
+         });
       });
    }
 
@@ -232,7 +218,7 @@ class ServiceRequests {
 
       const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
       await new Promise((resolve, reject) => {
-         const query = `UPDATE ${formattedFieldsForQuery} FROM service_requests WHERE requestID = ? ORDER BY preferredDateTime DESC`;
+         const query = `UPDATE ${formattedFieldsForQuery} FROM service_requests WHERE requestID = ?`;
          connection.query(query, [...newValues, requestID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
