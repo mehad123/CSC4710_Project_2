@@ -6,6 +6,8 @@ import { Users, ServiceRequests, ServiceOrders, Bills } from './dbService.js';
 
 dotenv.config();
 const multerFormParser = multer();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 const app = express();
 
@@ -50,7 +52,7 @@ const createServiceRequest = handleError(async (req, res) => {
 
     let photos = [];
     if (req.files) {
-        photos = req.files.map(file => file.filename);
+        photos = req.files.map(file => file.buffer.toString("base64"));
     }
 
     await serviceRequests.createServiceRequest({
@@ -71,18 +73,23 @@ const getServiceRequests = handleError(async (req, res) => {
     const result = await serviceRequests.getRequestsByClient(clientID);
     res.json(result);
 });
-const getOneServiceRequest = handleError(async (request, response) => {
-    const { requestID } = request.params;
-    const result = await serviceRequests.getOneRequestByClient(requestID)
-    response.json(result)
-})
+const getOneServiceRequest = handleError(async (req, res) => {
+    const { requestID } = req.params;
+    const result = await serviceRequests.getOneRequestByClient(requestID);
+    if (result && result.photos) {
+        if (typeof result.photos === "string") {
+            result.photos = JSON.parse(result.photos);
+        }
+    }
+    res.json(result);
+});
 const getAllServiceRequests = handleError(async (request, response) => {
     const result = await serviceRequests.getAllServiceRequests();
     response.json(result)
 })
 
 const updateServiceRequest = handleError(async (request, response) =>{
-    const {requestID} = request.paramsl
+    const {requestID} = request.params;
     const {updatedFields} = request.body;
     await serviceRequests.updateServiceRequest(updatedFields, requestID);
     response.send("ok")
@@ -93,10 +100,11 @@ app.post('/users', multerFormParser.none(),addUser);
 app.post("/users/login", multerFormParser.none(), logInUser); 
 
 app.get("/service-requests", getAllServiceRequests);
-app.post("/service-requests", multerFormParser.array("photos", 5), createServiceRequest);
 app.get("/service-requests/:clientID", getServiceRequests);
-app.get("/service-requests/:requestID", getOneServiceRequest);
+app.get("/service-requests/request/:requestID", getOneServiceRequest);
 app.put("/service-requests/:requestID", updateServiceRequest);
+
+app.post("/service-requests", upload.array("photos", 5), createServiceRequest);
 
 
 app.listen(process.env.APP_PORT, 

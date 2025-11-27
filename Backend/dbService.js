@@ -56,7 +56,7 @@ function connectToMYSQL(){
                preferredDateTime DATETIME,
                proposedBudget DECIMAL(10,2),
                optionalNote VARCHAR(500),
-               photos JSON,
+               photos LONGTEXT,
                chatHistory JSON,
                FOREIGN KEY (clientID) REFERENCES users(clientID)
             );
@@ -190,7 +190,7 @@ class ServiceRequests {
                else resolve(data);
          });
       });
-      return result;
+      return result[0];
    }
    async getRequestsByClient(clientID) {
       const result = await new Promise((resolve, reject) => {
