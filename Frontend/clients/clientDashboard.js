@@ -1,10 +1,10 @@
 const backendURL = "http://localhost:5050";
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const clientId = sessionStorage.getItem("clientId");
-    if (!clientId) return;
+    const clientID = sessionStorage.getItem("clientID");
+    if (!clientID) return;
 
-    const res = await fetch(`${backendURL}/service-requests/${clientId}`);
+    const res = await fetch(`${backendURL}/service-requests/${clientID}`);
     const requests = await res.json();
     loadTable(requests);
 });
@@ -21,7 +21,7 @@ function loadTable(queries){
         content += `
         <li>
             <section class='services'>
-                Service #<a href='clientSR.html?SR=${c.requestId}'>${c.requestId}</a>
+                Service #<a href='clientSR.html?SR=${c.requestID}'>${c.requestID}</a>
                 | ${c.cleanType} | ${formatDateTime(c.preferredDateTime)}
             </section>
         </li>`;
@@ -47,9 +47,9 @@ const form = document.getElementById("create-form");
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const clientId = sessionStorage.getItem("clientId");
+    const clientID = sessionStorage.getItem("clientID");
     const formData = new FormData(form);
-    formData.append("clientId", clientId);
+    formData.append("clientID", clientID);
 
     fetch(`${backendURL}/service-requests`, {
         method: "POST",
@@ -61,7 +61,7 @@ form.addEventListener("submit", async (e) => {
             alert("Service request submitted!");
             form.reset();
 
-            const res = await fetch(`${backendURL}/service-requests/${clientId}`);
+            const res = await fetch(`${backendURL}/service-requests/${clientID}`);
             const updatedRequests = await res.json();
             loadTable(updatedRequests);
         } else {

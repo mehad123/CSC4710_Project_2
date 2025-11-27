@@ -31,7 +31,7 @@ form.addEventListener("submit", async (e)=>{
             ? 
                 window.location.href = "anna/annaDashboard.html"
             :
-                window.location.href = "clients/clientDashboard.hml";
+                window.location.href = "clients/clientDashboard.html";
 
         } else {
             console.error("Sign-in failed:", data.message || data);
