@@ -83,9 +83,13 @@ function connectToMYSQL(){
          connection.query(`
             CREATE TABLE IF NOT EXISTS bills (
                id INT AUTO_INCREMENT UNIQUE,
+               clientID VARCHAR(50),
                billID VARCHAR(50) PRIMARY KEY,
+               generated DATETIME,
+               paid DATETIME,
                total DECIMAL(10, 2),
                FOREIGN KEY (billID) REFERENCES service_orders(orderID)
+
             );
          `);
          clearInterval(reconnectTimer);
@@ -194,8 +198,44 @@ class Users{
       })
       return result;
    }  
-   
-
+   async getGoodClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         WHERE clientID NOT IN (
+            SELECT clientID FROM bills 
+            WHERE (paid IS NOT NULL AND paid > DATE_ADD(generated, INTERVAL 24 HOUR))
+                  OR (paid IS NULL AND NOW() > DATE_ADD(generated, INTERVAL 24 HOUR))
+         )`;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
+   async getBadClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         WHERE clientID IN (
+            SELECT clientID FROM bills 
+            WHERE (paid IS NOT NULL AND paid > DATE_ADD(generated, INTERVAL 24 HOUR))
+                  OR (paid IS NULL AND NOW() > DATE_ADD(generated, INTERVAL 24 HOUR))
+         )`;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
 } 
 
 class ServiceRequests {

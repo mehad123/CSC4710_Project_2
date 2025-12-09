@@ -57,6 +57,15 @@ const getProspectiveClients = handleError(async (request, response) => {
     const result = await users.getProspectiveClients();
     response.json(result)
 })
+const getGoodClients = handleError(async (request, response) => {
+    const result = await users.getGoodClients();
+    response.json(result)
+})
+const getBadClients = handleError(async (request, response) => {
+    const result = await users.getBadClients();
+    response.json(result)
+})
+
 
 const createServiceRequest = handleError(async (req, res) => {
     const clientID = req.body.clientID;
@@ -110,9 +119,11 @@ const updateServiceRequest = handleError(async (request, response) =>{
 app.post('/users', multerFormParser.none(),addUser);
 app.get("/users", getAllUsers)
 app.post("/users/login", multerFormParser.none(), logInUser); 
-app.get("/users/frequent", multerFormParser.none(), getFrequentClients); 
-app.get("/users/uncommitted", multerFormParser.none(), getUncommittedClients); 
-app.get("/users/prospective", multerFormParser.none(), getProspectiveClients); 
+app.get("/users/frequent", getFrequentClients); 
+app.get("/users/uncommitted", getUncommittedClients); 
+app.get("/users/prospective", getProspectiveClients); 
+app.get("/users/good", getGoodClients); 
+app.get("/users/bad", getBadClients); 
 
 
 app.get("/service-requests", getAllServiceRequests);
