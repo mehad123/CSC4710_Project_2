@@ -9,6 +9,7 @@ let usersInstance = null;
 let serviceRequestsInstance = null;
 let serviceOrdersInstance = null;
 let billsInstance = null;
+let quotesInstance = null;
 
 let connection = null;
 let reconnectTimer = null;
@@ -78,10 +79,12 @@ function connectToMYSQL(){
             );
          `);
          connection.query(`
-            CREATE TABLE IF NOT EXISTS service_orders (
+            CREATE TABLE IF NOT EXISTS quotes (
                id INT AUTO_INCREMENT UNIQUE,
-               orderID VARCHAR(50) PRIMARY KEY,
-               FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
+               requestID VARCHAR(50),
+               quoteID VARCHAR(50) PRIMARY KEY,
+               total DECIMAL(10, 2),
+               FOREIGN KEY (billID) REFERENCES service_orders(orderID)
             );
          `);
          connection.query(`
@@ -238,6 +241,27 @@ class ServiceOrders{
       await new Promise((resolve, reject) => {
          const query = `INSERT INTO service_orders (orderID,) VALUES (?);`;
          connection.query(query, [orderID], (err, data) => {
+               if (err) reject(new Error(err.message));
+               else resolve(data);
+            }
+         );
+      });
+   }
+
+}
+
+class Quotes{
+   static getQuotesInstance() {
+        quotesInstance = quotesInstance ? quotesInstance : new Quotes();
+        return quotesInstance;
+    }
+
+   async createQuote(options) {
+      const {billID} = options;
+
+      await new Promise((resolve, reject) => {
+         const query = `INSERT INTO quotes (billID,) VALUES (?);`;
+         connection.query(query, [billID], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
             }
