@@ -24,21 +24,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     .then(res=> res.json())
     .then(prospectives => loadProspectives(prospectives));
 
-    fetch(backendURL + "/users/bad")
-    .then(res=> res.json())
-    .then(bad => loadBad(bad));
-
     fetch(backendURL + "/users/good")
     .then(res=> res.json())
     .then(good => loadGood(good));
 
-    fetch(backendURL + "/service-requests/accepted")
+    fetch(backendURL + "/users/bad")
+    .then(res=> res.json())
+    .then(bad => loadBad(bad));
+
+
+    fetch(backendURL + "/quotes/accepted")
     .then(res=> res.json())
     .then(accepted => loadAccepted(accepted));
+
 
     fetch(backendURL + "/service-requests/largest")
     .then(res=> res.json())
     .then(larges => loadLargest(larges));
+
 
     fetch(backendURL + "/bills/overdue")
     .then(res=> res.json())
@@ -46,36 +49,112 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 
-function loadAll(items){}
-function loadFrequents(ites){}
-function loadUncommited(items){}
-function loadProspectives(items){}
-function loadBad(items){}
-function loadGood(items){}
-function loadAccepted(items){}
-function loadLargest(items){}
-function loadOverdue(items){}
-
-function loadClients(queries){
-    const clients = document.getElementById("client-list");
-    let content = "";
-    queries.forEach(c => {
-        content += `
+function loadClient(client){
+    const content = 
+    `
         <li>
             <section class='client'>
-                Client Name: ${c["name"]}
+                <ul>
+                    <li>Client Name: ${client["firstname"]} ${client["lastname"]}</li>
+                    <li>
+                        Client Service Requests: 
+                        <ul>
+                            ${
+                                client["SRlist"].map(elem=>{
+                                    return `<li><a href='annaSR.html?SR=${elem}'>${elem}</a></li>`
+                                }).join("")
+                            }                        
+                        </ul>
+                    </li>
+                </ul>
+                Client Name: ${client["name"]}
                 <br/>
                 Client Service Requests: 
                 <ul>
                     ${
-                        c["SRlist"].map(elem=>{
+                        client["SRlist"].map(elem=>{
                             return `<li><a href='annaSR.html?SR=${elem}'>${elem}</a></li>`
                         }).join("")
                     }
                 </ul>
             </section>
-        </li>`;
+        </li>
+    `
+    return content
+}
+
+function loadAll(items){
+    const clients = document.getElementById("all-clients");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
     });
     clients.innerHTML = content;
+}
+function loadFrequents(items){
+    const frequents = document.getElementById("frequent-clients");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
+    });
+    frequents.innerHTML = content;
+}
+function loadUncommited(items){
+    const uncommitted = document.getElementById("uncommitted-clients");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
+    });
+    uncommitted.innerHTML = content;
+}
+function loadProspectives(items){
+    const prospectives = document.getElementById("prospective-clients");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
+    });
+    prospectives.innerHTML = content;
+}
+
+function loadGood(items){
+    const goodClients = document.getElementById("good-clients");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
+    });
+    goodClients.innerHTML = content;
+}
+
+function loadBad(items){
+    const badClients = document.getElementById("bad-clients");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
+    });
+    badClients.innerHTML = content;
+}
+function loadAccepted(items){
+    const accepted = document.getElementById("accepted-quotes");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
+    });
+    accepted.innerHTML = content;
+}
+function loadLargest(items){
+    const bigJobs = document.getElementById("largest-jobs");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
+    });
+    bigJobs.innerHTML = content;
+}
+function loadOverdue(items){
+    const overdue = document.getElementById("overdue-bills");
+    let content = "";
+    items.forEach(c => {
+        content += loadClient(c);
+    });
+    overdue.innerHTML = content;
 }
 
