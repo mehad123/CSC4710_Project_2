@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { request, response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from "multer";
@@ -47,7 +47,6 @@ const updateUser = handleError(async (request, response) => {
     await users.updateUser(email, updatedFields);
     response.send("ok");
 });
-
 const getAllUsers = handleError(async (request, response) => {
     const result = await users.getAllUsers();
     response.json(result)
@@ -96,14 +95,20 @@ const createServiceRequest = handleError(async (req, res) => {
 
     res.json({ success: true });
 });
-const getServiceRequests = handleError(async (req, res) => {
+const updateServiceRequest = handleError(async (request, response) =>{
+    const {requestID} = request.params;
+    const {updatedFields} = request.body;
+    await serviceRequests.updateServiceRequest(requestID, updatedFields);
+    response.send("ok")
+})
+const getRequests = handleError(async (req, res) => {
     const { clientID } = req.params;
-    const result = await serviceRequests.getRequestsByClient(clientID);
+    const result = await serviceRequests.getRequests(clientID);
     res.json(result);
 });
-const getOneServiceRequest = handleError(async (req, res) => {
+const getRequest = handleError(async (req, res) => {
     const { requestID } = req.params;
-    const result = await serviceRequests.getOneRequestByClient(requestID);
+    const result = await serviceRequests.getRequest(requestID);
     if (result && result.photos) {
         if (typeof result.photos === "string") {
             result.photos = JSON.parse(result.photos);
@@ -115,13 +120,11 @@ const getAllServiceRequests = handleError(async (request, response) => {
     const result = await serviceRequests.getAllServiceRequests();
     response.json(result)
 })
-
-const updateServiceRequest = handleError(async (request, response) =>{
-    const {requestID} = request.params;
-    const {updatedFields} = request.body;
-    await serviceRequests.updateServiceRequest(updatedFields, requestID);
-    response.send("ok")
+const getLargestRequests = handleError(async (request, response) => {
+    const result = await serviceOrders.getLargestRequests();
+    response.json(result);
 })
+
 
 const updateQuote = handleError(async (request, response) =>{
     const {quoteID} = request.params;
@@ -144,11 +147,13 @@ app.get("/users/prospective", getProspectiveClients);
 app.get("/users/good", getGoodClients); 
 app.get("/users/bad", getBadClients); 
 
-app.get("/service-requests", getAllServiceRequests);
-app.get("/service-requests/:clientID", getServiceRequests);
-app.get("/service-requests/request/:requestID", getOneServiceRequest);
-app.put("/service-requests/:requestID", updateServiceRequest);
 app.post("/service-requests", upload.array("photos", 5), createServiceRequest);
+app.get("/service-requests", getAllServiceRequests);
+app.put("/service-requests/:requestID", updateServiceRequest);
+app.get("/service-requests/:clientID", getRequests);
+app.get("/service-requests/request/:requestID", getRequest);
+app.get("/service-requests/largest", getLargestRequests);
+
 
 app.put("/quotes/:quoteID", updateQuote);
 app.get("/quotes/accepted", getAcceptedQuotes);
@@ -158,3 +163,4 @@ app.listen(process.env.APP_PORT,
         console.log(`I am listening on port ${process.env.APP_PORT}.`);
     }
 );
+

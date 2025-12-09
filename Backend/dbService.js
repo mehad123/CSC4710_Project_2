@@ -140,14 +140,15 @@ class Users{
       
       return { success: true, clientID: realPassword[0].clientID };
    }
-   async updateUser(email, fields){
-      const colUpdates = Object.entries(fields).map(pair=>{
-         return `${pair[0]} = ${typeof pair[1] === "number" ? pair[1] : `'${pair[1]}'`}`;
-      }).join(", ");
+   async updateUser(email, updatedFields){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
+
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
 
       await new Promise((resolve, reject) => {
-         const query = `UPDATE users SET ${colUpdates} WHERE email = ?;`;
-         connection.query(query, [email], (err, data) => {
+         const query = `UPDATE users SET ${formattedFieldsForQuery} WHERE email = ?;`;
+         connection.query(query, [...newValues, email], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
@@ -259,32 +260,40 @@ class ServiceRequests {
    static getServiceRequestInstance() {
         serviceRequestsInstance = serviceRequestsInstance ? serviceRequestsInstance : new ServiceRequests();
         return serviceRequestsInstance;
-    } 
-
+   } 
    async createServiceRequest(options) {
-      const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
-      
-      await new Promise((resolve, reject) => {
-         const query = `
-               INSERT INTO service_requests 
-               (requestID, clientID, status, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos, chatHistory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         `;
+      const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, chatHistory} = options;
+      const requestID = uuidv4();
 
+      await new Promise((resolve, reject) => {
+         const query = `INSERT INTO service_requests (status, requestID, clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, chatHistory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
          // status can be:
          //    1) ORDERING
          //    2) BILLING
          //    3) CANCELED
          //    4) COMPLETE
-         connection.query(query, [uuidv4(), clientID, "ORDERING", address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, JSON.stringify(photos), "[]"], (err, data) => {
+         connection.query(query, ["ORDERING", requestID, clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, "[]"], (err, data) => {
             if (err) reject(new Error(err.message));
             else resolve(data);
          });
       });
    }
+   async updateServiceRequest(requestID, updatedFields){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
 
-   async getOneRequestByClient(requestID){
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE service_requests SET ${formattedFieldsForQuery} WHERE requestID = ?`;
+         connection.query(query, [...newValues, requestID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+   }
+   async getRequest(requestID){
       const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM service_requests WHERE requestID = ? ORDER BY preferredDateTime DESC`;
+         const query = `SELECT * FROM service_requests WHERE requestID = ?`;
          connection.query(query, [requestID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
@@ -292,7 +301,7 @@ class ServiceRequests {
       });
       return result[0];
    }
-   async getRequestsByClient(clientID) {
+   async getClientRequests(clientID) {
       const result = await new Promise((resolve, reject) => {
          const query = `SELECT * FROM service_requests WHERE clientID = ? ORDER BY preferredDateTime DESC`;
          connection.query(query, [clientID], (err, data) => {
@@ -312,18 +321,15 @@ class ServiceRequests {
       });
       return result;
    }
-   async updateServiceRequest(updatedFields, requestID){
-      const fields = Object.keys(updatedFields);
-      const newValues = fields.map(key => updatedFields[key]);
-
-      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
-      await new Promise((resolve, reject) => {
-         const query = `UPDATE ${formattedFieldsForQuery} FROM service_requests WHERE requestID = ?`;
-         connection.query(query, [...newValues, requestID], (err, data) => {
+   async getLargestRequests(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM service_requests ORDER BY roomQuantity DESC`;
+         connection.query(query, [],(err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
+      return result;
    }
 }
 
