@@ -37,7 +37,7 @@ function connectToMYSQL(){
                requestIDs JSON,
                firstname VARCHAR(50),
                lastname VARCHAR(50),
-               email VARCHAR(100),
+               email VARCHAR(100) UNIQUE,
                address VARCHAR(100),
                phoneNumber VARCHAR(20),
                password VARCHAR(100)
@@ -66,17 +66,10 @@ function connectToMYSQL(){
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_orders (
                id INT AUTO_INCREMENT UNIQUE,
+               clientID VARCHAR(50),
                orderID VARCHAR(50) PRIMARY KEY,
                FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
             ); 
-         `);
-         connection.query(`
-            CREATE TABLE IF NOT EXISTS bills (
-               id INT AUTO_INCREMENT UNIQUE,
-               billID VARCHAR(50) PRIMARY KEY,
-               total DECIMAL(10, 2),
-               FOREIGN KEY (billID) REFERENCES service_orders(orderID)
-            );
          `);
          connection.query(`
             CREATE TABLE IF NOT EXISTS quotes (
@@ -101,7 +94,6 @@ function connectToMYSQL(){
    });
 
 }
-
 class Users{
    static getUsersInstance(){ 
       usersInstance = usersInstance ? usersInstance : new Users();
@@ -110,7 +102,7 @@ class Users{
    async createUser(options){
       const {firstname, lastname, email, address, phoneNumber, password} = options;
       const clientID = uuidv4();
-
+      
       const hashedPass = await bcrypt.hash(password, 10);
       await new Promise((resolve, reject) => {
          const query = "INSERT INTO users (clientID, requestIDs, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
@@ -119,8 +111,7 @@ class Users{
                else resolve({ data });
          });
       });
-
-   }client
+   }
    async validateLogin(email, password){
       //are we anna? this is temporary
       if (email === "anna" && password === "123"){
@@ -155,7 +146,56 @@ class Users{
       })
       return result;
    }  
- 
+   async getFrequentClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         ORDER BY JSON_LENGTH(requestIDs) DESC
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
+   async getUncommittedClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         WHERE JSON_LENGTH(requestIDs) >= 3 AND clientID NOT IN (SELECT clientID FROM service_orders)
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
+   async getProspectiveClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         WHERE JSON_LENGTH(requestIDs) = 0
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
+   
+
 } 
 
 class ServiceRequests {

@@ -45,6 +45,18 @@ const getAllUsers = handleError(async (request, response) => {
     const result = await users.getAllUsers();
     response.json(result)
 })
+const getFrequentClients = handleError(async (request, response) => {
+    const result = await users.getFrequentClients();
+    response.json(result)
+})
+const getUncommittedClients = handleError(async (request, response) => {
+    const result = await users.getUncommittedClients();
+    response.json(result)
+})
+const getProspectiveClients = handleError(async (request, response) => {
+    const result = await users.getProspectiveClients();
+    response.json(result)
+})
 
 const createServiceRequest = handleError(async (req, res) => {
     const clientID = req.body.clientID;
@@ -95,9 +107,13 @@ const updateServiceRequest = handleError(async (request, response) =>{
     response.send("ok")
 })
 
-app.get("/users", getAllUsers)
 app.post('/users', multerFormParser.none(),addUser);
+app.get("/users", getAllUsers)
 app.post("/users/login", multerFormParser.none(), logInUser); 
+app.get("/users/frequent", multerFormParser.none(), getFrequentClients); 
+app.get("/users/uncommitted", multerFormParser.none(), getUncommittedClients); 
+app.get("/users/prospective", multerFormParser.none(), getProspectiveClients); 
+
 
 app.get("/service-requests", getAllServiceRequests);
 app.get("/service-requests/:clientID", getServiceRequests);
