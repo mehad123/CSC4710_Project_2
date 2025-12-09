@@ -126,6 +126,10 @@ const getLargestRequests = handleError(async (request, response) => {
 })
 
 
+const createQuote = handleError(async (request, response) => {  
+    await quotes.createQuote(request.body); 
+    response.send("ok");
+});
 const updateQuote = handleError(async (request, response) =>{
     const {quoteID} = request.params;
     const {updatedFields} = request.body;
@@ -136,6 +140,23 @@ const getAcceptedQuotes = handleError(async (request, response) => {
     const result = await quotes.getAcceptedQuotes();
     response.json(result)
 })
+
+
+const createBill = handleError(async (request, response) => {  
+    await bills.createBill(request.body); 
+    response.send("ok");
+});
+const updateBill = handleError(async (request, response) =>{
+    const {billID} = request.params;
+    const {updatedFields} = request.body;
+    await bills.updateBill(billID, updatedFields);
+    response.send("ok");
+})
+const getOverdueBills = handleError(async (request, response) => {
+    const result = await bills.getOverdueBills();
+    response.json(result)
+})
+
 
 app.post('/users', multerFormParser.none(),addUser);
 app.get("/users", getAllUsers)
@@ -154,9 +175,14 @@ app.get("/service-requests/:clientID", getRequests);
 app.get("/service-requests/request/:requestID", getRequest);
 app.get("/service-requests/largest", getLargestRequests);
 
-
+app.post("/quotes", createQuote)
 app.put("/quotes/:quoteID", updateQuote);
 app.get("/quotes/accepted", getAcceptedQuotes);
+
+app.post("/bills", createBill)
+app.put("/bills/:billID", updateBill);
+app.get("/bills/overdue", getOverdueBills)
+
 
 app.listen(process.env.APP_PORT, 
     () => {

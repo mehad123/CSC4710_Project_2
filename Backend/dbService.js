@@ -80,8 +80,7 @@ function connectToMYSQL(){
                price DECIMAL(10,2),
                windowStart DATETIME,
                windowEnd DATETIME,
-               note VARCHAR(1000),
-               FOREIGN KEY (billID) REFERENCES service_orders(orderID)
+               note VARCHAR(1000)
             );
          `);
          connection.query(`
@@ -91,9 +90,9 @@ function connectToMYSQL(){
                billID VARCHAR(50) PRIMARY KEY,
                generated DATETIME,
                paid DATETIME,
-               total DECIMAL(10, 2),
+               price DECIMAL(10, 2),
+               canceled BOOLEAN,
                FOREIGN KEY (billID) REFERENCES service_orders(orderID)
-
             );
          `);
          clearInterval(reconnectTimer);
@@ -223,7 +222,7 @@ class Users{
          WHERE clientID NOT IN (
             SELECT clientID FROM bills 
             WHERE (paid IS NOT NULL AND paid > DATE_ADD(generated, INTERVAL 24 HOUR))
-                  OR (paid IS NULL AND NOW() > DATE_ADD(generated, INTERVAL 24 HOUR))
+                  OR (paid IS NULL AND canceled = FALSE AND NOW() > DATE_ADD(generated, INTERVAL 24 HOUR))
          )`;
          connection.query(query, (err, data) => {
                if(err) reject(new Error(err.message));
@@ -242,7 +241,7 @@ class Users{
          WHERE clientID IN (
             SELECT clientID FROM bills 
             WHERE (paid IS NOT NULL AND paid > DATE_ADD(generated, INTERVAL 24 HOUR))
-                  OR (paid IS NULL AND NOW() > DATE_ADD(generated, INTERVAL 24 HOUR))
+                  OR (paid IS NULL AND canceled = FALSE AND NOW() > DATE_ADD(generated, INTERVAL 24 HOUR))
          )`;
          connection.query(query, (err, data) => {
                if(err) reject(new Error(err.message));
@@ -371,14 +370,14 @@ class Quotes{
          );
       });
    }
-   async updateQuote(quoteID, fields){
-      const colUpdates = Object.entries(fields).map(pair=>{
-         return `${pair[0]} = ${typeof pair[1] === "number" ? pair[1] : `'${pair[1]}'`}`;
-      }).join(", ");
+   async updateQuote(quoteID, updatedFields){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
 
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
       await new Promise((resolve, reject) => {
-         const query = `UPDATE quotes SET ${colUpdates} WHERE quoteID = ?;`;
-         connection.query(query, [quoteID], (err, data) => {
+         const query = `UPDATE quotes SET ${formattedFieldsForQuery} WHERE quoteID = ?;`;
+         connection.query(query, [...newValues, quoteID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
@@ -406,16 +405,44 @@ class Bills{
     }
 
    async createBill(options) {
-      const {billID} = options;
+      const {clientID, price} = options;
+      const billID = uuidv4();
+      const generated = new Date();
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO service_orders (billID,) VALUES (?);`;
-         connection.query(query, [billID], (err, data) => {
+         const query = `INSERT INTO bills (clientID, billID, generated, price, canceled) VALUES (?, ?, ?, ?, ?);`;
+         connection.query(query, [clientID, billID, generated, price, false], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
             }
          );
       });
+   }
+   async updateBill(billID, updatedFields){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
+
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE bills SET ${formattedFieldsForQuery} WHERE billID = ?;`;
+         connection.query(query, [...newValues, billID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+   }
+   async getOverdueBills(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+            SELECT clientID FROM bills 
+            WHERE (paid IS NULL AND canceled = FALSE AND NOW() > DATE_ADD(generated, INTERVAL 7 DAY))
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
    }
 
 }
