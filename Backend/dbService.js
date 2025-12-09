@@ -9,6 +9,7 @@ let usersInstance = null;
 let serviceRequestsInstance = null;
 let serviceOrdersInstance = null;
 let billsInstance = null;
+let quotesInstance = null;
 
 let connection = null;
 let reconnectTimer = null;
@@ -36,14 +37,13 @@ function connectToMYSQL(){
                requestIDs JSON,
                firstname VARCHAR(50),
                lastname VARCHAR(50),
-               email VARCHAR(100),
+               email VARCHAR(100) UNIQUE,
                address VARCHAR(100),
                phoneNumber VARCHAR(20),
                password VARCHAR(100)
             );
          `);
             
-         // id is mainly if ever we need order of items inserted. 
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_requests (
                id INT AUTO_INCREMENT UNIQUE,
@@ -66,29 +66,39 @@ function connectToMYSQL(){
             CREATE TABLE IF NOT EXISTS service_orders (
                id INT AUTO_INCREMENT UNIQUE,
                orderID VARCHAR(50) PRIMARY KEY,
+               clientID VARCHAR(50),
+               address VARCHAR(200),
+               cleanType VARCHAR(100),
+               roomQuantity INT,
+               windowStart DATETIME,
+               windowEnd DATETIME,
+               price DECIMAL(10,2),
+               optionalNote VARCHAR(500),
                FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
             ); 
          `);
          connection.query(`
-            CREATE TABLE IF NOT EXISTS bills (
+            CREATE TABLE IF NOT EXISTS quotes (
                id INT AUTO_INCREMENT UNIQUE,
-               billID VARCHAR(50) PRIMARY KEY,
-               total DECIMAL(10, 2),
-               FOREIGN KEY (billID) REFERENCES service_orders(orderID)
+               quoteID VARCHAR(50) PRIMARY KEY,
+               clientID VARCHAR(50),
+               status VARCHAR(100),
+               decided DATETIME,
+               price DECIMAL(10,2),
+               windowStart DATETIME,
+               windowEnd DATETIME,
+               note VARCHAR(1000)
             );
          `);
          connection.query(`
-            CREATE TABLE IF NOT EXISTS service_orders (
-               id INT AUTO_INCREMENT UNIQUE,
-               orderID VARCHAR(50) PRIMARY KEY,
-               FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
-            );
-         `);
-         connection.query(`
             CREATE TABLE IF NOT EXISTS bills (
                id INT AUTO_INCREMENT UNIQUE,
+               clientID VARCHAR(50),
                billID VARCHAR(50) PRIMARY KEY,
-               total DECIMAL(10, 2),
+               generated DATETIME,
+               paid DATETIME,
+               price DECIMAL(10, 2),
+               canceled BOOLEAN,
                FOREIGN KEY (billID) REFERENCES service_orders(orderID)
             );
          `);
@@ -98,7 +108,6 @@ function connectToMYSQL(){
    });
 
 }
-
 class Users{
    static getUsersInstance(){ 
       usersInstance = usersInstance ? usersInstance : new Users();
@@ -107,7 +116,7 @@ class Users{
    async createUser(options){
       const {firstname, lastname, email, address, phoneNumber, password} = options;
       const clientID = uuidv4();
-
+      
       const hashedPass = await bcrypt.hash(password, 10);
       await new Promise((resolve, reject) => {
          const query = "INSERT INTO users (clientID, requestIDs, firstname, lastname, email, address, phoneNumber, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
@@ -116,8 +125,7 @@ class Users{
                else resolve({ data });
          });
       });
-
-   }client
+   }
    async validateLogin(email, password){
       //are we anna? this is temporary
       if (email === "anna" && password === "123"){
@@ -138,6 +146,20 @@ class Users{
       
       return { success: true, clientID: realPassword[0].clientID };
    }
+   async updateUser(email, updatedFields){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
+
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
+
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE users SET ${formattedFieldsForQuery} WHERE email = ?;`;
+         connection.query(query, [...newValues, email], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+   }
 
    async getAllUsers(){
       const result = await new Promise((resolve, reject) => {
@@ -152,39 +174,132 @@ class Users{
       })
       return result;
    }  
- 
+   async getFrequentClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         ORDER BY JSON_LENGTH(requestIDs) DESC
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
+   async getUncommittedClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         WHERE JSON_LENGTH(requestIDs) >= 3 AND clientID NOT IN (SELECT clientID FROM service_orders)
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
+   async getProspectiveClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         WHERE JSON_LENGTH(requestIDs) = 0
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
+   async getGoodClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         WHERE clientID NOT IN (
+            SELECT clientID FROM bills 
+            WHERE (paid IS NOT NULL AND paid > DATE_ADD(generated, INTERVAL 24 HOUR))
+                  OR (paid IS NULL AND canceled = FALSE AND NOW() > DATE_ADD(generated, INTERVAL 24 HOUR))
+         )`;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
+   async getBadClients(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT firstname, lastname, clientID, requestIDs FROM users 
+         WHERE clientID IN (
+            SELECT clientID FROM bills 
+            WHERE (paid IS NOT NULL AND paid > DATE_ADD(generated, INTERVAL 24 HOUR))
+                  OR (paid IS NULL AND canceled = FALSE AND NOW() > DATE_ADD(generated, INTERVAL 24 HOUR))
+         )`;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result;
+   }  
 } 
 
 class ServiceRequests {
    static getServiceRequestInstance() {
         serviceRequestsInstance = serviceRequestsInstance ? serviceRequestsInstance : new ServiceRequests();
         return serviceRequestsInstance;
-    } 
-
+   } 
    async createServiceRequest(options) {
-      const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
-      
-      await new Promise((resolve, reject) => {
-         const query = `
-               INSERT INTO service_requests 
-               (requestID, clientID, status, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos, chatHistory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         `;
+      const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, chatHistory} = options;
+      const requestID = uuidv4();
 
+      await new Promise((resolve, reject) => {
+         const query = `INSERT INTO service_requests (status, requestID, clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, chatHistory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
          // status can be:
          //    1) ORDERING
          //    2) BILLING
          //    3) CANCELED
          //    4) COMPLETE
-         connection.query(query, [uuidv4(), clientID, "ORDERING", address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, JSON.stringify(photos), "[]"], (err, data) => {
+         connection.query(query, ["ORDERING", requestID, clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, "[]"], (err, data) => {
             if (err) reject(new Error(err.message));
             else resolve(data);
          });
       });
    }
+   async updateServiceRequest(requestID, updatedFields){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
 
-   async getOneRequestByClient(requestID){
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE service_requests SET ${formattedFieldsForQuery} WHERE requestID = ?`;
+         connection.query(query, [...newValues, requestID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+   }
+   async getRequest(requestID){
       const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM service_requests WHERE requestID = ? ORDER BY preferredDateTime DESC`;
+         const query = `SELECT * FROM service_requests WHERE requestID = ?`;
          connection.query(query, [requestID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
@@ -192,7 +307,7 @@ class ServiceRequests {
       });
       return result[0];
    }
-   async getRequestsByClient(clientID) {
+   async getClientRequests(clientID) {
       const result = await new Promise((resolve, reject) => {
          const query = `SELECT * FROM service_requests WHERE clientID = ? ORDER BY preferredDateTime DESC`;
          connection.query(query, [clientID], (err, data) => {
@@ -212,18 +327,15 @@ class ServiceRequests {
       });
       return result;
    }
-   async updateServiceRequest(updatedFields, requestID){
-      const fields = Object.keys(updatedFields);
-      const newValues = fields.map(key => updatedFields[key]);
-
-      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
-      await new Promise((resolve, reject) => {
-         const query = `UPDATE ${formattedFieldsForQuery} FROM service_requests WHERE requestID = ?`;
-         connection.query(query, [...newValues, requestID], (err, data) => {
+   async getLargestRequests(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM service_requests ORDER BY roomQuantity DESC`;
+         connection.query(query, [],(err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
+      return result;
    }
 }
 
@@ -233,18 +345,73 @@ class ServiceOrders{
         return serviceOrdersInstance;
    }
    async createServiceOrder(options) {
-      const {orderID} = options;
+      const {clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote} = options;
+      const orderID = uuidv4();
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO service_orders (orderID,) VALUES (?);`;
-         connection.query(query, [orderID], (err, data) => {
+         const query = `INSERT INTO service_orders (orderID, clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+         connection.query(query, [ orderID, clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote], (err, data) => {
+            if (err) reject(new Error(err.message));
+            else resolve(data);
+         });
+      });
+   }
+   async getServiceOrder(requestID){
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM service_orders WHERE requestID = ?`;
+         connection.query(query, [requestID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result[0];
+   }
+}
+
+class Quotes{
+   static getQuotesInstance() {
+        quotesInstance = quotesInstance ? quotesInstance : new Quotes();
+        return quotesInstance;
+   }
+   async createQuote(options) {
+      const {clientID, status, price, windowStart, windowEnd, note} = options;
+      const quoteID = uuidv4();
+
+      await new Promise((resolve, reject) => {
+         const query = `INSERT INTO quotes (quoteID, clientID, status, price, windowStart, windowEnd, note) VALUES (?, ?, ?, ?, ?, ?, ?);`;
+         connection.query(query, [quoteID, clientID, status, price, windowStart, windowEnd, note], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
             }
          );
       });
    }
+   async updateQuote(quoteID, updatedFields){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
 
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE quotes SET ${formattedFieldsForQuery} WHERE quoteID = ?;`;
+         connection.query(query, [...newValues, quoteID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+   }
+   async getAcceptedQuotes(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT quoteID, clientID, status, windowStart, windowEnd, note, decided FROM quotes 
+         WHERE status = 'ACCEPTED' AND (MONTH(NOW()) = MONTH(decided) AND YEAR(NOW()) = YEAR(decided))
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
+   }  
 }
 
 class Bills{
@@ -254,19 +421,47 @@ class Bills{
     }
 
    async createBill(options) {
-      const {billID} = options;
+      const {clientID, price} = options;
+      const billID = uuidv4();
+      const generated = new Date();
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO service_orders (billID,) VALUES (?);`;
-         connection.query(query, [billID], (err, data) => {
+         const query = `INSERT INTO bills (clientID, billID, generated, price, canceled) VALUES (?, ?, ?, ?, ?);`;
+         connection.query(query, [clientID, billID, generated, price, false], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
             }
          );
       });
    }
+   async updateBill(billID, updatedFields){
+      const fields = Object.keys(updatedFields);
+      const newValues = fields.map(key => updatedFields[key]);
+
+      const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE bills SET ${formattedFieldsForQuery} WHERE billID = ?;`;
+         connection.query(query, [...newValues, billID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+   }
+   async getOverdueBills(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+            SELECT clientID FROM bills 
+            WHERE (paid IS NULL AND canceled = FALSE AND NOW() > DATE_ADD(generated, INTERVAL 7 DAY))
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
+   }
 
 }
 
-export { Users, ServiceRequests, ServiceOrders, Bills };
+export { Users, ServiceRequests, Quotes, ServiceOrders, Bills };
  
