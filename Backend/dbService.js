@@ -65,8 +65,15 @@ function connectToMYSQL(){
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_orders (
                id INT AUTO_INCREMENT UNIQUE,
-               clientID VARCHAR(50),
                orderID VARCHAR(50) PRIMARY KEY,
+               clientID VARCHAR(50),
+               address VARCHAR(200),
+               cleanType VARCHAR(100),
+               roomQuantity INT,
+               windowStart DATETIME,
+               windowEnd DATETIME,
+               price DECIMAL(10,2),
+               optionalNote VARCHAR(500),
                FOREIGN KEY (orderID) REFERENCES service_requests(requestID)
             ); 
          `);
@@ -338,18 +345,27 @@ class ServiceOrders{
         return serviceOrdersInstance;
    }
    async createServiceOrder(options) {
-      const {orderID} = options;
+      const {clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote} = options;
+      const orderID = uuidv4();
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO service_orders (orderID,) VALUES (?);`;
-         connection.query(query, [orderID], (err, data) => {
-               if (err) reject(new Error(err.message));
-               else resolve(data);
-            }
-         );
+         const query = `INSERT INTO service_orders (orderID, clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+         connection.query(query, [ orderID, clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote], (err, data) => {
+            if (err) reject(new Error(err.message));
+            else resolve(data);
+         });
       });
    }
-
+   async getServiceOrder(requestID){
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM service_orders WHERE requestID = ?`;
+         connection.query(query, [requestID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result[0];
+   }
 }
 
 class Quotes{
