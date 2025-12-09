@@ -44,7 +44,6 @@ function connectToMYSQL(){
             );
          `);
             
-         // id is mainly if ever we need order of items inserted. 
          connection.query(`
             CREATE TABLE IF NOT EXISTS service_requests (
                id INT AUTO_INCREMENT UNIQUE,
@@ -74,9 +73,14 @@ function connectToMYSQL(){
          connection.query(`
             CREATE TABLE IF NOT EXISTS quotes (
                id INT AUTO_INCREMENT UNIQUE,
-               requestID VARCHAR(50),
                quoteID VARCHAR(50) PRIMARY KEY,
-               total DECIMAL(10, 2),
+               clientID VARCHAR(50),
+               status VARCHAR(100),
+               decided DATETIME,
+               price DECIMAL(10,2),
+               windowStart DATETIME,
+               windowEnd DATETIME,
+               note VARCHAR(1000),
                FOREIGN KEY (billID) REFERENCES service_orders(orderID)
             );
          `);
@@ -135,6 +139,19 @@ class Users{
       }
       
       return { success: true, clientID: realPassword[0].clientID };
+   }
+   async updateUser(email, fields){
+      const colUpdates = Object.entries(fields).map(pair=>{
+         return `${pair[0]} = ${typeof pair[1] === "number" ? pair[1] : `'${pair[1]}'`}`;
+      }).join(", ");
+
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE users SET ${colUpdates} WHERE email = ?;`;
+         connection.query(query, [email], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
    }
 
    async getAllUsers(){
@@ -334,21 +351,46 @@ class Quotes{
    static getQuotesInstance() {
         quotesInstance = quotesInstance ? quotesInstance : new Quotes();
         return quotesInstance;
-    }
-
+   }
    async createQuote(options) {
-      const {billID} = options;
+      const {clientID, status, price, windowStart, windowEnd, note} = options;
+      const quoteID = uuidv4();
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO quotes (billID,) VALUES (?);`;
-         connection.query(query, [billID], (err, data) => {
+         const query = `INSERT INTO quotes (quoteID, clientID, status, price, windowStart, windowEnd, note) VALUES (?, ?, ?, ?, ?, ?, ?);`;
+         connection.query(query, [quoteID, clientID, status, price, windowStart, windowEnd, note], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
             }
          );
       });
    }
+   async updateQuote(quoteID, fields){
+      const colUpdates = Object.entries(fields).map(pair=>{
+         return `${pair[0]} = ${typeof pair[1] === "number" ? pair[1] : `'${pair[1]}'`}`;
+      }).join(", ");
 
+      await new Promise((resolve, reject) => {
+         const query = `UPDATE quotes SET ${colUpdates} WHERE quoteID = ?;`;
+         connection.query(query, [quoteID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+   }
+   async getAcceptedQuotes(){
+      const result = await new Promise((resolve, reject) => {
+         const query = `
+         SELECT quoteID, clientID, status, windowStart, windowEnd, note, decided FROM quotes 
+         WHERE status = 'ACCEPTED' AND (MONTH(NOW()) = MONTH(decided) AND YEAR(NOW()) = YEAR(decided))
+         `;
+         connection.query(query, (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
+   }  
 }
 
 class Bills{
@@ -372,5 +414,5 @@ class Bills{
 
 }
 
-export { Users, ServiceRequests, ServiceOrders, Bills };
+export { Users, ServiceRequests, Quotes, ServiceOrders, Bills };
  
