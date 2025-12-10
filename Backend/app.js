@@ -75,7 +75,7 @@ const getBadClients = handleError(async (request, response) => {
 
 const createServiceRequest = handleError(async (req, res) => {
     const data = req.body;
-    data["photos"] = JSON.stringify(req.files.map(file => file.buffer.toString("base64")));
+    data["photos"] = JSON.stringify(req.files.map(file => `data:${file.mimetype};base64,${file.buffer.toString("base64")}`));
     
     await serviceRequests.createServiceRequest(data);
     res.json({ success: true });
@@ -94,17 +94,12 @@ const getRequests = handleError(async (req, res) => {
 const getRequest = handleError(async (req, res) => {
     const { requestID } = req.params;
     const result = await serviceRequests.getRequest(requestID);
-    if (result && result.photos) {
-        if (typeof result.photos === "string") {
-            result.photos = JSON.parse(result.photos);
-        }
-    }
     res.json(result);
 });
 const getAllServiceRequests = handleError(async (request, response) => {
     const result = await serviceRequests.getAllServiceRequests();
     response.json(result)
-})
+}) 
 const getLargestRequests = handleError(async (request, response) => {
     const result = await serviceOrders.getLargestRequests();
     response.json(result);

@@ -307,6 +307,7 @@ class ServiceRequests {
       });
       result = result.map(req => {
          req["photos"] = JSON.parse(req["photos"]);
+         req["chatHistory"] = JSON.parse(req["chatHistory"])
          return req;
       })
       return result[0];
@@ -321,6 +322,7 @@ class ServiceRequests {
       });
       result = result.map(req => {
          delete req["photos"]
+         req["chatHistory"] = JSON.parse(req["chatHistory"])
          return req;
       })
       return result;
@@ -335,6 +337,7 @@ class ServiceRequests {
       });
       result = result.map(req => {
          delete req["photos"]
+         req["chatHistory"] = JSON.parse(req["chatHistory"])
          return req;
       })
       return result;
@@ -349,6 +352,7 @@ class ServiceRequests {
       });
       result = result.map(req => {
          delete req["photos"]
+         req["chatHistory"] = JSON.parse(req["chatHistory"])
          return req;
       })
       return result;

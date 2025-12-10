@@ -61,7 +61,7 @@ function loadClient(client){
                         <ul>
                             ${
                                 client["SRlist"].map(elem=>{
-                                    return `<li><a href='annaSR.html?SR=${elem}'>${elem}</a></li>`
+                                    return `<li><a href='annaSR.html?requestID=${elem}'>${elem}</a></li>`
                                 }).join("")
                             }                        
                         </ul>
@@ -73,7 +73,7 @@ function loadClient(client){
                 <ul>
                     ${
                         client["SRlist"].map(elem=>{
-                            return `<li><a href='annaSR.html?SR=${elem}'>${elem}</a></li>`
+                            return `<li><a href='annaSR.html?requestID=${elem}'>${elem}</a></li>`
                         }).join("")
                     }
                 </ul>
