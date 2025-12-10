@@ -9,11 +9,8 @@
                 height: 100vh;
             }
             #SR-info{
-                flex: 1;
+                flex: 1; 
                 border: 1px solid;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
             }
             #chat{
                 height: 100%;
@@ -21,51 +18,43 @@
                 flex-direction: column;
                 border: 1px solid;
 
-                justify-content: space-between;
-            } 
+                justify-content: space-between; 
+            }
             #chatDisplay{
                 border: 1px solid;
                 height: 100%;
             }
-            #bill-info{
-                border-top: 1px solid #ccc;
-                padding: 10px;
+            #create-quote, #revise-bill{
+                display: none;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: antiquewhite;
+                padding: 30px;
             }
-            #table{
-                border:1;
-                margin-bottom: auto;
-            }
-
         </style>
-        <title>Service Request</title>
+        <title>Document</title>
     </head>
     <body>
-        <div id="SR-info">
-            <h2>Service Request Info</h2>
-
-            <div id="table">
-                <table id="request-table" border="1"></table>
-                <div id="photos"></div>
+        <h1 id="page-title"></h1>
+        <div id="page-main">
+            <div id="page-left">
+                <form id="sr-form">
+                    
+                </form>  
+                <form id="order-form"> 
+                </form>  
+                <form id="bill-form">
+                </form>  
+            </div>
+            <div id="page-right">
+                <section id="chat">
+                    <h2>Chat</h2>
+                </section>
             </div>
 
-            
-            <div id="bill-info">
-                <h2>Bill Negotiation</h2>
-                Bill: $3928
-                <button>Pay</button>
-            </div>            
         </div>
-
-        <div id="chat">
-            <h1>Chat</h1>
-            <section id="chatDisplay">
-                chat1
-            </section>
-            <section id="newChat">
-                <textarea>Type your message</textarea>
-                <button>Submit</button>
-            </section>
-        </div>
-        <script src="clientSR.js"></script>
+        <script src="annaSR.js"></script>
     </body>
 </html>
