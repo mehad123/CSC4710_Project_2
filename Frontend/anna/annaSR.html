@@ -18,7 +18,7 @@
                 flex-direction: column;
                 border: 1px solid;
 
-                justify-content: space-between;
+                justify-content: space-between; 
             }
             #chatDisplay{
                 border: 1px solid;
@@ -28,19 +28,23 @@
         <title>Document</title>
     </head>
     <body>
-        <div>
-            <form id="sr-form" action="post">
-            </form>                
+        <h1 id="page-title"></h1>
+        <div id="page-main">
+            <div id="page-left">
+                <form id="sr-form">
+                </form>  
+                <form id="order-form">
+                </form>  
+                <form id="bill-form">
+                </form>  
+            </div>
+            <div id="page-right">
+                <section id="chat">
+                    
+                </section>
+            </div>
         </div>
-        <div id="chat">
-            <h2>Chat</h2>
-            <section id="chatDisplay">
-            </section>
-            <section id="newChat"> 
-                <textarea>Type your message</textarea>
-                <button>Submit</button>
-            </section>
-        </div>
+
         <script src="annaSR.js"></script>
     </body>
 </html>

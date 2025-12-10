@@ -142,6 +142,17 @@ const getAcceptedQuotes = handleError(async (request, response) => {
 })
 
 
+const createServiceOrder = handleError(async (request, response) => {
+    await serviceOrders.createServiceOrder(request.body);
+    response.send("ok");
+})
+const getServiceOrder = handleError(async (request, response) => {
+    const {orderID} = request.params;
+    const result = await serviceOrders.getServiceOrder(orderID);
+    response.json(result);
+})
+
+
 const createBill = handleError(async (request, response) => {  
     await bills.createBill(request.body); 
     response.send("ok");
@@ -178,6 +189,9 @@ app.get("/service-requests/largest", getLargestRequests);
 app.post("/quotes", createQuote)
 app.put("/quotes/:quoteID", updateQuote);
 app.get("/quotes/accepted", getAcceptedQuotes);
+
+app.post("/service-orders", createServiceOrder);
+app.get("/service-orders/:orderID", getServiceOrder);
 
 app.post("/bills", createBill)
 app.put("/bills/:billID", updateBill);
