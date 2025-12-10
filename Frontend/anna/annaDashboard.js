@@ -101,8 +101,8 @@ function loadBill(bill){
                 <span>Bill Info: </span>
                 <ul>
                     <li>Total: $${bill["price"]}</li>
-                    <li>Generated: ${bill["generated"]}</li>                         
-                    <li>Paid: ${request["paid"] || "Unpaid"}</li>                         
+                    <li>Generated: ${new Date(bill["generated"]).toLocaleString()}</li>                         
+                    <li>Paid: ${bill["paid"] ? new Date(bill["paid"]).toLocaleString() : "Unpaid"}</li>                         
                 </ul>
             </section>
         </li>
@@ -121,7 +121,7 @@ function loadQuote(quote){
                 <ul>
                     <li>Total: $${quote["price"]}</li>
                     <li>Status: ${quote["status"]}</li>                         
-                    <li>Decided: ${quote["decided"] || "unknown"}</li>                         
+                    <li>Decided: ${quote["decided"] ? new Date(quote["decided"]).toLocaleString() : "unknown"}</li>                         
                 </ul>
             </section>
         </li>

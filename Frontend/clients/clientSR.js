@@ -64,7 +64,7 @@ function loadServiceRequest(SR){
                 <li>Address: ${SR["address"]}</li>
                 <li>Type of Cleaning: ${SR["cleanType"]}</li>
                 <li>Number of Rooms: ${SR["roomQuantity"]}</li>
-                <li>Preferred Arrival: ${SR["preferredDateTime"]}</li>
+                <li>Preferred Arrival: ${new Date(SR["preferredDateTime"]).toLocaleString()}</li>
                 <li>Price: ${SR["proposedBudget"]}</li>
                 <li>Note: ${SR["optionalNote"] || "None"}</li>
             </ul>
@@ -102,7 +102,7 @@ function loadServiceOrder(order){
                 <li>Number of Rooms: ${order["roomQuantity"]}</li>
                 <li>Arrival Time: ${order["windowStart"]} to ${order["windowEnd"]}</li>
                 <li>Price: ${order["price"]}</li>
-                <li>Note: <p>${order["optionalNote"] || "None"}</p></li>
+                <li>Note: ${order["optionalNote"] || "None"}</li>
             </ul>
         </fieldset>
     `;
@@ -117,20 +117,21 @@ function loadBill(bill){
         <fieldset>
             <legend>Receipt Information</legend>
             <ul>
-                <li>Bill ID: ${order["billID"]}</li>
+                <li>Bill ID: ${bill["billID"]}</li>
+                <li>Order ID: ${bill["orderID"]}</li>
                 <li>Client ID: ${bill["clientID"]}</li>
             </ul>
         </fieldset>
         <fieldset>
             <legend>Billing Information</legend>
             <ul>
-                <li>Date Generated: ${bill["generated"]}</li>
-                <li>Date Paid: ${bill["paid"] || "None"}</li>
-                <li>Total: ${order["price"]}</li>
+                <li>Date Generated: ${new Date(bill["generated"]).toLocaleString()}</li>
+                <li>Date Paid: ${bill["paid"] ? new Date(bill["paid"]).toLocaleString() : "None"}</li>
+                <li>Total: ${bill["price"]}</li>
             </ul>
         </fieldset>
     `;
-    billForm.innerHTML = content;
+    billForm.innerHTML = content; 
 }
 function loadChat(SR){
     const chat = SR["chatHistory"];
@@ -158,7 +159,7 @@ function loadChat(SR){
                     :
                     `
                     <section class="message">
-                        ${msg["revision"] && '<strong><i>Anna has revised the bill</i></strong><br>'}
+                        ${msg["revision"] ? '<strong><i>Anna has revised the bill</i></strong><br>' : ""}
                         ${msg["note"]}
                     </section>
                     `
@@ -222,16 +223,17 @@ function loadChat(SR){
     `;
 }
 
+
 async function handleReject(){
     serviceRequest["status"] = "CANCELED";
     serviceRequest["chatHistory"].push({
         "status": "CANCELED",
         "note": "Client has declined",
     })
-    const updateQuoteRes = await fetch(`/quotes/${serviceRequest["chatHistory"].at(-1)["quoteID"]}`, {
+    const updateQuoteRes = await fetch(`${backendURL}/quotes/${serviceRequest["chatHistory"].at(-1)["quoteID"]}`, {
         "method": "PUT",
         "headers": {"Content-Type": "application/json"},
-        "body": {"updatedFields": {"decided": new Date(), "status": "REJECTED"}}
+        "body": JSON.stringify({"updatedFields": {"decided": new Date().toISOString().slice(0, 19).replace("T", " "), "status": "REJECTED"}})
     })
     console.log(updateQuoteRes)
     const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
@@ -245,6 +247,14 @@ async function handleReject(){
 
 async function sendMessage() {
     const message = document.getElementById("message").value;
+
+    if (serviceRequest["status"] === "ORDERING"){
+        await fetch(`${backendURL}/quotes/${serviceRequest["chatHistory"].at(-1)["quoteID"]}`, {
+            "method": "PUT",
+            "headers": {"Content-Type": "application/json"},
+            "body": JSON.stringify({"updatedFields": {"decided": new Date().toISOString().slice(0, 19).replace("T", " "), "status": "REJECTED"}})
+        })      
+    }
     serviceRequest["chatHistory"].push({
         "status": serviceRequest["status"],
         "note": message,
@@ -261,39 +271,42 @@ async function sendMessage() {
 async function handleAccept() {
     const message = document.getElementById("message").value;
     if (serviceRequest["status"] === "ORDERING"){
-        console.log(serviceRequest["chatHistory"].at(-1))
-
+        console.log(`/quotes/${serviceRequest["chatHistory"].at(-1)["quoteID"]}`)
         //update quote
-        const updateQuoteRes = await fetch(`/quotes/${serviceRequest["chatHistory"].at(-1)["quoteID"]}`, {
+        const updateQuoteRes = await fetch(`${backendURL}/quotes/${serviceRequest["chatHistory"].at(-1)["quoteID"]}`, {
             "method": "PUT",
             "headers": {"Content-Type": "application/json"},
-            "body": {"updatedFields": {"decided": new Date(), "status": "ACCEPTED"}}
+            "body": JSON.stringify({"updatedFields": {"decided": new Date().toISOString().slice(0, 19).replace("T", " "), "status": "ACCEPTED"}})
         })
-        console.log(updateQuoteRes)
-        //create bill
-        await fetch(`/bills`, {
+        const {requestID, clientID, address, cleanType, roomQuantity, optionalNote} = serviceRequest
+        const {price, windowStart, windowEnd} = serviceRequest["chatHistory"].at(-1)
+        //create order
+        await fetch(`${backendURL}/service-orders`, {
             "method": "POST",
             "headers": {"Content-Type": "application/json"},
-            "body": {"updatedFields": {"clientID": serviceRequest["clientID"], "price": serviceRequest["chatHistory"].at(-1)["price"]}}
+            "body": JSON.stringify({requestID, clientID, address, cleanType, roomQuantity, optionalNote, price, windowStart, windowEnd })
+        })
+        
+        //create bill
+        await fetch(`${backendURL}/bills`, {
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "body": JSON.stringify({clientID, price, "orderID": requestID })
         })
 
 
         serviceRequest["status"] = "BILLING";
-        serviceRequest["chatHistory"].push({
-            "status": serviceRequest["status"] ,
-            "note": `Client has accepted order\n\n${message}`
-        })
     }else if (serviceRequest["status"] === "BILLING"){
         //pay bill
-        await fetch(`/bills/${currentBill["billID"]}`, {
+        await fetch(`${backendURL}/bills/${currentBill["billID"]}`, {
             "method": "PUT",
             "headers": {"Content-Type": "application/json"},
-            "body": {"updatedFields": {"paid": new Date()}}
+            "body": JSON.stringify({"updatedFields": {"paid": new Date().toISOString().slice(0, 19).replace("T", " ")}})
         })
         serviceRequest["status"] = "COMPLETED";
         serviceRequest["chatHistory"].push({
             "status": serviceRequest["status"] ,
-            "note": `Client has paid the bill\n\n${message}`
+            "note": `Client has paid the bill. Note:${message}`
         })
     }
     const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {

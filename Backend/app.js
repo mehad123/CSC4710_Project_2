@@ -116,6 +116,7 @@ const createQuote = handleError(async (request, response) => {
     response.json({quoteID});
 });
 const updateQuote = handleError(async (request, response) =>{
+    console.log("ma")
     const {quoteID} = request.params;
     const {updatedFields} = request.body;
     await quotes.updateQuote(quoteID, updatedFields);
@@ -132,7 +133,7 @@ const createServiceOrder = handleError(async (request, response) => {
     response.send("ok");
 })
 const getServiceOrder = handleError(async (request, response) => {
-    const {orderID} = request.params;
+    const {orderID} = request.params; 
     const result = await serviceOrders.getServiceOrder(orderID);
     response.json(result);
 })
@@ -150,7 +151,7 @@ const updateBill = handleError(async (request, response) =>{
 })
 const getBills = handleError(async (req, res) => {
     const { requestID } = req.params;
-    const result = await serviceRequests.getBills(requestID);
+    const result = await bills.getBills(requestID);
     res.json(result);
 });
 const getOverdueBills = handleError(async (request, response) => {

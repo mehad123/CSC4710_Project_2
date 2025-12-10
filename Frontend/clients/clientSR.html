@@ -18,12 +18,14 @@
             }
             #page-left{
                 display: flex;
-                flex-direction: column;
                 flex: 2;
                 border: 1px solid gray;
+                flex-wrap: wrap;
                 border-radius: 10px;
                 padding: 10px;
                 align-items: center;
+                justify-content: center;
+                gap: 10px;
             }
             #page-right{
                 flex: 1;
@@ -31,7 +33,7 @@
                 border-radius: 10px;
             }
             form{
-                width: fit-content;
+                max-width: 500px;
                 background-color: rgb(239, 247, 253);
                 border-radius: 20px;
                 border: 1px dotted;

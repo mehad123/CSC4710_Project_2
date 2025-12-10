@@ -95,7 +95,7 @@ function connectToMYSQL(){
                id INT AUTO_INCREMENT UNIQUE,
                clientID VARCHAR(50),
                billID VARCHAR(50) PRIMARY KEY,
-               requestID VARCHAR(50),
+               orderID VARCHAR(50),
                generated DATETIME,
                paid DATETIME,
                price DECIMAL(10, 2),
@@ -218,7 +218,7 @@ class Users{
       })
       return result;
    }  
-   async getProspectiveClients(){
+   async getProspectiveClients(){ 
       const result = await new Promise((resolve, reject) => {
          const query = `
          SELECT firstname, lastname, clientID, requestIDs FROM users 
@@ -387,10 +387,10 @@ class ServiceOrders{
          });
       });
    }
-   async getServiceOrder(requestID){
+   async getServiceOrder(orderID){
       const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM service_orders WHERE requestID = ?`;
-         connection.query(query, [requestID], (err, data) => {
+         const query = `SELECT * FROM service_orders WHERE orderID = ?`;
+         connection.query(query, [orderID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
@@ -434,7 +434,7 @@ class Quotes{
    async getAcceptedQuotes(){
       const result = await new Promise((resolve, reject) => {
          const query = `
-         SELECT quoteID, clientID, status, windowStart, windowEnd, note, decided FROM quotes 
+         SELECT * FROM quotes 
          WHERE status = 'ACCEPTED' AND (MONTH(NOW()) = MONTH(decided) AND YEAR(NOW()) = YEAR(decided))
          `;
          connection.query(query, (err, data) => {
@@ -453,13 +453,12 @@ class Bills{
     }
 
    async createBill(options) {
-      const {clientID, price} = options;
+      const {clientID, price, orderID} = options;
       const billID = uuidv4();
-      const generated = new Date();
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO bills (clientID, billID, generated, price, canceled) VALUES (?, ?, ?, ?, ?);`;
-         connection.query(query, [clientID, billID, generated, price, false], (err, data) => {
+         const query = `INSERT INTO bills (clientID, billID, orderID, generated, price, canceled) VALUES (?, ?, ?, NOW(), ?, ?);`;
+         connection.query(query, [clientID, billID, orderID, price, false], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
             }
@@ -479,10 +478,10 @@ class Bills{
          });
       });
    }
-   async getBills(requestID){
+   async getBills(orderID){
       const result = await new Promise((resolve, reject) => {
-         const query = `SELECT * FROM bills WHERE requestID = ?`;
-         connection.query(query, [requestID], (err, data) => {
+         const query = `SELECT * FROM bills WHERE orderID = ?`;
+         connection.query(query, [orderID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
@@ -492,7 +491,7 @@ class Bills{
    async getOverdueBills(){
       const result = await new Promise((resolve, reject) => {
          const query = `
-            SELECT clientID FROM bills 
+            SELECT * FROM bills 
             WHERE (paid IS NULL AND canceled = FALSE AND NOW() > DATE_ADD(generated, INTERVAL 7 DAY))
          `;
          connection.query(query, (err, data) => {
