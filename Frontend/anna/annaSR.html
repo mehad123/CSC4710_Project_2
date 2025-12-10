@@ -18,29 +18,64 @@
                 flex-direction: column;
                 border: 1px solid;
 
-                justify-content: space-between;
+                justify-content: space-between; 
             }
             #chatDisplay{
                 border: 1px solid;
                 height: 100%;
             }
+            #create-quote, #revise-bill{
+                display: hidden;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: antiquewhite;
+                padding: 30px;
+            }
         </style>
         <title>Document</title>
     </head>
     <body>
-        <div>
-            <form id="sr-form" action="post">
-            </form>                
+        <h1 id="page-title"></h1>
+        <div id="page-main">
+            <div id="page-left">
+                <form id="sr-form">
+                </form>  
+                <form id="order-form">
+                </form>  
+                <form id="bill-form">
+                </form>  
+            </div>
+            <div id="page-right">
+                <section id="chat">
+                </section>
+            </div>
+
         </div>
-        <div id="chat">
-            <h2>Chat</h2>
-            <section id="chatDisplay">
-            </section>
-            <section id="newChat"> 
-                <textarea>Type your message</textarea>
-                <button>Submit</button>
-            </section>
-        </div>
+        <section id="create-quote">
+            <ul>
+                <input id="quote-price" >
+                <input id="quote-windowStart" >
+                <input id="quote-windowEnd" >
+                <input id="quote-note">
+                <button onclick="createQuote()">Send Quote</button>
+                <button onclick="
+                    document.getElementById('create-quote').style.display = 'none'
+                ">Cancel</button>
+            </ul>
+        </section>
+        <section id="revise-bill">
+            <ul>
+                <input id="bill-price" >
+                <input id="bill-note" >
+
+                <button onclick="reviseBill()">Send Quote</button>
+                <button onclick="
+                    document.getElementById('revise-bill').style.display = 'none'
+                ">Cancel</button>
+            </ul>
+        </section>
         <script src="annaSR.js"></script>
     </body>
 </html>
