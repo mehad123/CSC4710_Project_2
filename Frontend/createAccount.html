@@ -5,15 +5,15 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Sign up</title>
         <script>
-            const isLoggedIn = sessionStorage.getItem("loggedIn");
+            const isLoggedIn = sessionStorage.getItem("clientID");
             if (isLoggedIn){
-                window.location.href = "dashboard.html"
+                window.location.href = "clients/clientDashboard.html"
             }
         </script>
     </head>
     <body>
         <a href="index.html"><button>Back to Home</button></a>
-        <form id="create-form" method="post">
+        <form id="create-form" method="post"> 
             <h1>Sign Up</h1>
             <fieldset>
                 <ul>

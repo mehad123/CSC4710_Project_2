@@ -4,10 +4,13 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+            h1{
+                text-align: center;
+            }
             .dashboard-container {
                 display: flex;
-                justify-content: space-between; /* left and right */
-                align-items: flex-start;        /* top-aligned */
+                justify-content: space-between; 
+                align-items: flex-start;        
             }
             #service-list{
                 display: flex;
@@ -15,33 +18,48 @@
                 gap: 20px;
             }
             .service{
+                width: 300px;
                 border: 1px solid;
-                width: fit-content;
                 padding: 10px;
-                padding-right:50px;
                 background-color: rgb(248, 246, 244);
             }
             .enterInfo{
+                border: 2px solid;
+                border-radius: 10px;
+
+            }
+            #create-form{
                 display: flex;
-                margin-right: 100px;
-                justify-content: flex-end;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                
+            }
+            #signout{
+                position: fixed;
+                top: 20px;
+                left: 20px;
             }
         </style>
         <title>Client Dashboard</title>
     </head>
     <body>
         <h1>Welcome to your dashboard!</h1>
+        <button id="signout" onclick="
+        sessionStorage.clear()
+        window.location.href = '..';
+        ">Sign Out</button>
         <div class="dashboard-container">
             <div class="service">
                 <h3>Service Requests</h3>
+                <hr>
                 <ul id="service-list">
                 </ul>
             </div>
 
             <div class="enterInfo">
-                <form id="create-form" method="post">
+                <form id="create-form" method="post"> 
                     <h3>New Service Request:</h3>
-                    <fieldset>
                         <ul>
                             <li>
                                 <label >
@@ -64,30 +82,29 @@
                             <li>
                                 <label>
                                     Preferred Date and Time
-                                    <input name="prefDate" type="datetime-local" required>
+                                    <input name="preferredDateTime" type="datetime-local" required>
                                 </label>
                             </li>
                             <li>
                                 <label>
                                     Proposed Budget
-                                    <input name="budget" type="number" required>
+                                    <input name="proposedBudget" type="number" required>
                                 </label>
                             </li>
                             <li>
                                 <label >
                                     Optional Note
-                                    <input name="note" type="text">
+                                    <input name="optionalNote" type="text">
                                 </label>
                             </li>          
                             <li>
                                 <label >
                                     Upload Photos of your Home
-                                    <input name="photos" type="file" accept="image/*" multiple id="photoUpload">
+                                    <input name="photos" type="file" accept="image/*" id="photoUpload" multiple>
                                 </label>
                             </li>
                             <p id="file-error" style="color:red;"></p>
                         </ul>
-                    </fieldset>
                     <button type="submit">Submit Request</button>
                 </form>
             </div>

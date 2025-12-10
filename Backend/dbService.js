@@ -95,11 +95,11 @@ function connectToMYSQL(){
                id INT AUTO_INCREMENT UNIQUE,
                clientID VARCHAR(50),
                billID VARCHAR(50) PRIMARY KEY,
+               requestID VARCHAR(50),
                generated DATETIME,
                paid DATETIME,
                price DECIMAL(10, 2),
-               canceled BOOLEAN,
-               FOREIGN KEY (billID) REFERENCES service_orders(orderID)
+               canceled BOOLEAN
             );
          `);
          clearInterval(reconnectTimer);
@@ -126,7 +126,7 @@ class Users{
          });
       });
    }
-   async validateLogin(email, password){
+   async validateLogin(email, password){ 
       //are we anna? this is temporary
       if (email === "anna" && password === "123"){
          return { success: true, clientID: "anna" };
@@ -268,17 +268,17 @@ class ServiceRequests {
         return serviceRequestsInstance;
    } 
    async createServiceRequest(options) {
-      const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, chatHistory} = options;
+      const {clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, photos} = options;
       const requestID = uuidv4();
 
       await new Promise((resolve, reject) => {
-         const query = `INSERT INTO service_requests (status, requestID, clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, chatHistory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+         const query = `INSERT INTO service_requests (status, requestID, clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, chatHistory, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
          // status can be:
          //    1) ORDERING
          //    2) BILLING
          //    3) CANCELED
          //    4) COMPLETE
-         connection.query(query, ["ORDERING", requestID, clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, "[]"], (err, data) => {
+         connection.query(query, ["ORDERING", requestID, clientID, address, cleanType, roomQuantity, preferredDateTime, proposedBudget, optionalNote, "[]", photos], (err, data) => {
             if (err) reject(new Error(err.message));
             else resolve(data);
          });
@@ -298,33 +298,45 @@ class ServiceRequests {
       });
    }
    async getRequest(requestID){
-      const result = await new Promise((resolve, reject) => {
+      let result = await new Promise((resolve, reject) => {
          const query = `SELECT * FROM service_requests WHERE requestID = ?`;
          connection.query(query, [requestID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
+      result = result.map(req => {
+         req["photos"] = JSON.parse(req["photos"]);
+         return req;
+      })
       return result[0];
    }
    async getClientRequests(clientID) {
-      const result = await new Promise((resolve, reject) => {
+      let result = await new Promise((resolve, reject) => {
          const query = `SELECT * FROM service_requests WHERE clientID = ? ORDER BY preferredDateTime DESC`;
          connection.query(query, [clientID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
+      result = result.map(req => {
+         delete req["photos"]
+         return req;
+      })
       return result;
    }
    async getAllServiceRequests(){
-      const result = await new Promise((resolve, reject) => {
+      let result = await new Promise((resolve, reject) => {
          const query = `SELECT * FROM service_requests ORDER BY preferredDateTime DESC`;
          connection.query(query, [],(err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
+      result = result.map(req => {
+         delete req["photos"]
+         return req;
+      })
       return result;
    }
    async getLargestRequests(){
@@ -335,6 +347,10 @@ class ServiceRequests {
                else resolve(data);
          });
       });
+      result = result.map(req => {
+         delete req["photos"]
+         return req;
+      })
       return result;
    }
 }
@@ -345,8 +361,8 @@ class ServiceOrders{
         return serviceOrdersInstance;
    }
    async createServiceOrder(options) {
-      const {clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote} = options;
-      const orderID = uuidv4();
+      const {requestID, clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote} = options;
+      const orderID = requestID;
 
       await new Promise((resolve, reject) => {
          const query = `INSERT INTO service_orders (orderID, clientID, address, cleanType, roomQuantity, windowStart, windowEnd, price, optionalNote) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
@@ -434,7 +450,7 @@ class Bills{
             }
          );
       });
-   }
+   } 
    async updateBill(billID, updatedFields){
       const fields = Object.keys(updatedFields);
       const newValues = fields.map(key => updatedFields[key]);
