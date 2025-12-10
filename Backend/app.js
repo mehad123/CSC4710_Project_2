@@ -74,25 +74,10 @@ const getBadClients = handleError(async (request, response) => {
 
 
 const createServiceRequest = handleError(async (req, res) => {
-    const clientID = req.body.clientID;
-    const { address, cleanType, roomQuantity, prefDate, budget, note } = req.body;
-
-    let photos = [];
-    if (req.files) {
-        photos = req.files.map(file => file.buffer.toString("base64"));
-    }
-
-    await serviceRequests.createServiceRequest({
-        clientID,
-        address,
-        cleanType,
-        roomQuantity: parseInt(roomQuantity),
-        preferredDateTime: prefDate,
-        proposedBudget: parseFloat(budget),
-        optionalNote: note,
-        photos
-    });
-
+    const data = req.body;
+    data["photos"] = JSON.stringify(req.files.map(file => file.buffer.toString("base64")));
+    
+    await serviceRequests.createServiceRequest(data);
     res.json({ success: true });
 });
 const updateServiceRequest = handleError(async (request, response) =>{
@@ -103,7 +88,7 @@ const updateServiceRequest = handleError(async (request, response) =>{
 })
 const getRequests = handleError(async (req, res) => {
     const { clientID } = req.params;
-    const result = await serviceRequests.getRequests(clientID);
+    const result = await serviceRequests.getClientRequests(clientID);
     res.json(result);
 });
 const getRequest = handleError(async (req, res) => {
@@ -176,33 +161,33 @@ const getOverdueBills = handleError(async (request, response) => {
 
 app.post('/users', multerFormParser.none(),addUser);
 app.get("/users", getAllUsers)
-app.post("/users/:email", updateUser);
 app.post("/users/login", multerFormParser.none(), logInUser); 
 app.get("/users/frequent", getFrequentClients); 
 app.get("/users/uncommitted", getUncommittedClients); 
 app.get("/users/prospective", getProspectiveClients); 
 app.get("/users/good", getGoodClients); 
 app.get("/users/bad", getBadClients); 
+app.post("/users/:email", updateUser);
+
 
 app.post("/service-requests", upload.array("photos", 5), createServiceRequest);
 app.get("/service-requests", getAllServiceRequests);
-app.put("/service-requests/:requestID", updateServiceRequest);
-app.get("/service-requests/:clientID", getRequests);
-app.get("/service-requests/request/:requestID", getRequest);
+app.get("/service-requests/several/:clientID", getRequests);
 app.get("/service-requests/largest", getLargestRequests);
+app.get("/service-requests/:requestID", getRequest);
+app.put("/service-requests/:requestID", updateServiceRequest);
 
 app.post("/quotes", createQuote)
-app.put("/quotes/:quoteID", updateQuote);
 app.get("/quotes/accepted", getAcceptedQuotes);
+app.put("/quotes/:quoteID", updateQuote);
 
 app.post("/service-orders", createServiceOrder);
 app.get("/service-orders/:orderID", getServiceOrder);
 
 app.post("/bills", createBill)
+app.get("/bills/overdue", getOverdueBills)
 app.get("/bills/:requestID", getBills);
 app.put("/bills/:billID", updateBill);
-app.get("/bills/overdue", getOverdueBills)
-
 
 app.listen(process.env.APP_PORT, 
     () => {

@@ -6,8 +6,6 @@ form.addEventListener("submit", async (e)=>{
     e.preventDefault();
 
     const fields = Object.fromEntries((new FormData(form)).entries());
-
-
     const {email, password} = fields;
 
     if (!email || !password) {
@@ -15,6 +13,7 @@ form.addEventListener("submit", async (e)=>{
         errorMsg.style.color = "red";
         return;
     }
+     
     fetch("http://localhost:5050/users/login",{
         method: "POST",
         body: new FormData(form)
@@ -24,15 +23,13 @@ form.addEventListener("submit", async (e)=>{
         if (data && data.success) {
             console.log("Login successful!");
             alert("Login successful!");
-            sessionStorage.setItem("clientID", data.clientID);
-            sessionStorage.setItem("loggedIn", email);
 
-            data.clientID === "anna" 
-            ? 
+            if (data.clientID === "anna"){
                 window.location.href = "anna/annaDashboard.html"
-            :
+            }else{
+                sessionStorage.setItem("clientID", data.clientID);
                 window.location.href = "clients/clientDashboard.html";
-
+            }
         } else {
             console.error("Sign-in failed:", data.message || data);
             alert("Invalid email or password!");

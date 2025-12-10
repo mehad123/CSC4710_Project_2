@@ -4,26 +4,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const clientID = sessionStorage.getItem("clientID");
     if (!clientID) return;
 
-    const res = await fetch(`${backendURL}/service-requests/${clientID}`);
+    const res = await fetch(`${backendURL}/service-requests/several/${clientID}`);
     const requests = await res.json();
     loadTable(requests);
 });
 
 function formatDateTime(dtString){
     const dt = new Date(dtString);
-    return dt.toLocaleString(); // will use local timezone and readable format
+    return dt.toLocaleString(); 
 }
-
+ 
 function loadTable(queries){
     const services = document.getElementById("service-list");
     let content = "";
     queries.forEach(c => {
         content += `
         <li>
-            <section class='services'>
-                Service #<a href='clientSR.html?SR=${c.requestID}'>${c.requestID}</a>
-                | ${c.cleanType} | ${formatDateTime(c.preferredDateTime)}
-            </section>
+            Service Request ID: <a href='clientSR.html?SR=${c.requestID}'>${c.requestID}</a>
         </li>`;
     });
     services.innerHTML = content;
@@ -59,11 +56,7 @@ form.addEventListener("submit", async (e) => {
     .then(async data => {
         if(data.success){
             alert("Service request submitted!");
-            form.reset();
-
-            const res = await fetch(`${backendURL}/service-requests/${clientID}`);
-            const updatedRequests = await res.json();
-            loadTable(updatedRequests);
+            window.location.reload()
         } else {
             alert("Failed to submit service request.");
         }
