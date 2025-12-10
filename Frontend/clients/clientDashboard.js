@@ -1,26 +1,30 @@
 const backendURL = "http://localhost:5050";
 
+let clientInfo;
+
 document.addEventListener('DOMContentLoaded', async () => {
     const clientID = sessionStorage.getItem("clientID");
     if (!clientID) return;
 
-    const res = await fetch(`${backendURL}/service-requests/several/${clientID}`);
-    const requests = await res.json();
-    loadTable(requests);
+    const res = await fetch(`${backendURL}/users/${clientID}`);
+    const data = await res.json();
+    clientInfo = data
+    console.log(clientInfo)
+    loadTable(clientInfo);
 });
 
 function formatDateTime(dtString){
     const dt = new Date(dtString);
     return dt.toLocaleString(); 
 }
- 
-function loadTable(queries){
+  
+function loadTable(){
     const services = document.getElementById("service-list");
     let content = "";
-    queries.forEach(c => {
+    clientInfo["requestIDs"].forEach(id => {
         content += `
         <li>
-            Service Request ID: <a href='clientSR.html?requestID=${c.requestID}'>${c.requestID}</a>
+            Service Request ID: <a href='clientSR.html?requestID=${id}'>${id}</a>
         </li>`;
     });
     services.innerHTML = content;
@@ -54,11 +58,17 @@ form.addEventListener("submit", async (e) => {
     })
     .then(res => res.json())
     .then(async data => {
+        const newRequestID = data["requestID"]
         if(data.success){
+            await fetch(`${backendURL}/users/${clientID}`, {
+                "method": "PUT",
+                "headers": {"Content-Type": "application/json"},
+                "body": JSON.stringify({"updatedFields": {"requestIDs": JSON.stringify([...clientInfo["requestIDs"], newRequestID])}})
+            })
             alert("Service request submitted!");
             window.location.reload()
         } else {
-            alert("Failed to submit service request.");
+            alert("Failed to submit service request."); 
         }
     })
     .catch(err => {

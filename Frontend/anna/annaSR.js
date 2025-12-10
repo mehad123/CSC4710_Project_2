@@ -4,7 +4,7 @@ const backendURL = "http://localhost:5050";
 let serviceRequest;
 let currentBill;
 
-let srState;
+let srstatus;
 let annasTurn;
 
 const srTitle = document.getElementById("page-title");
@@ -21,9 +21,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetch(`${backendURL}/service-requests/${requestID}`)
     .then(res => res.json())
     .then(SR => {
-        annasTurn = serviceRequest["chatHistory"].length % i == 0;
         serviceRequest = SR;
-        if (!["ORDERING", "CANCELED"].includes(SR["state"])){
+        annasTurn = serviceRequest["chatHistory"].length % 2 == 0;
+        if (!["ORDERING", "CANCELED"].includes(SR["status"])){
             fetch(`${backendURL}/service-orders/${requestID}`)
             .then(res => res.json())
             .then(order => loadServiceOrder(order));
@@ -42,15 +42,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 }); 
 
-
+ 
 
 function loadServiceRequest(SR){
-    console.log("SR: ", SR);
 
     let content = 
      `
-        <h2>Service Request Info</h2>
-        <fieldset>
+        <h2>Service Request Information</h2>
+         <fieldset>
             <legend>General Information</legend>
             <ul>
                 <li>Request ID: ${SR["requestID"]}</li>
@@ -64,21 +63,21 @@ function loadServiceRequest(SR){
                 <li>Address: ${SR["address"]}</li>
                 <li>Type of Cleaning: ${SR["cleanType"]}</li>
                 <li>Number of Rooms: ${SR["roomQuantity"]}</li>
-                <li>Preferred Arrival: ${SR["preferredDateTime"]}</li>
+                <li>Preferred Arrival: ${new Date(SR["preferredDateTime"]).toLocaleString()}</li>
                 <li>Price: ${SR["proposedBudget"]}</li>
-                <li>Note: <p>${SR["optionalNote"] || "None"}</p></li>
+                <li>Note: ${SR["optionalNote"] || "None"}</li>
             </ul>
         </fieldset>
-
+        ${SR["photos"].length > 0 ?
+            `<fieldset>
+                <legend>Images</legend>
+                <ul id='images'>
+                    ${SR["photos"].map(url => `<li><a href='${url}' target='_blank'><img src='${url}' alt="photo"></a></li>`).join("")}
+                </ul>
+            </fieldset>` : ""
+        }
     `;
-        // ${/*SR["photos"].length > 0 &&
-        // `<fieldset>
-        //     <legend>Images</legend>
-        //     <ul>
-        //         ${SR["photos"].map(url => `<img src=${url} alt="photo">`)}
-        //     </ul>
-        // </fieldset>
-        // `*/}
+
     srForm.innerHTML = content;
 }
 
@@ -102,7 +101,7 @@ function loadServiceOrder(order){
                 <li>Number of Rooms: ${order["roomQuantity"]}</li>
                 <li>Arrival Time: ${order["windowStart"]} to ${order["windowEnd"]}</li>
                 <li>Price: ${order["price"]}</li>
-                <li>Note: <p>${order["optionalNote"] || "None"}</p></li>
+                <li>Note: ${order["optionalNote"] || "None"}</li>
             </ul>
         </fieldset>
     `;
@@ -116,36 +115,42 @@ function loadBill(bill){
         <fieldset>
             <legend>Receipt Information</legend>
             <ul>
-                <li>Bill ID: ${order["billID"]}</li>
+                <li>Bill ID: ${bill["billID"]}</li>
+                <li>Order ID: ${bill["orderID"]}</li>
                 <li>Client ID: ${bill["clientID"]}</li>
             </ul>
         </fieldset>
         <fieldset>
             <legend>Billing Information</legend>
             <ul>
-                <li>Date Generated: ${bill["generated"]}</li>
-                <li>Date Paid: ${bill["paid"] || "None"}</li>
-                <li>Total: ${order["price"]}</li>
+                <li>Date Generated: ${new Date(bill["generated"]).toLocaleString()}</li>
+                <li>Date Paid: ${bill["paid"] ? new Date(bill["paid"]).toLocaleString() : "None"}</li>
+                <li>Total: ${bill["price"]}</li>
             </ul>
         </fieldset>
     `;
     billForm.innerHTML = content;
 }
 function loadChat(SR){
+    console.log(SR)
     const chat = SR["chatHistory"];
-
+    console.log(chat)
+    let messages = "";
+    let hub = "";
     chat.forEach((msg, i) => {  
+        console.log(msg)
         if (i % 2 == 0){
-            content += 
+            messages += 
             `
             <section class="message">
+                <h3>Anna</h3>
                 ${
-                    msg["state"] === "ORDERING" 
+                    msg["status"] === "ORDERING" 
                     ?
                     `
                     <article class="quote">   
                         <ul>
-                            <li>Scheduled window: ${msg["windowStart"]} to ${msg["windowEnd"]}</li>
+                            <li>Scheduled window:<br> ${new Date(msg["windowStart"]).toLocaleString()} to ${new Date(msg["windowEnd"]).toLocaleString()}</li>
                             <li>Price: ${msg["price"]}</li>
                         </ul>
                         <br>
@@ -155,6 +160,7 @@ function loadChat(SR){
                     :
                     `
                     <section class="message">
+                        ${msg?.["revision"] ? '<strong><i>Anna has revised the bill</i></strong><br>' : ""}
                         ${msg["note"]}
                     </section>
                     `
@@ -163,52 +169,68 @@ function loadChat(SR){
             </section>
             `
         }else{
-            content += 
+            messages += 
             `
             <section class="message">
-                ${msg["revision"] && '<strong><i>Anna has revised the bill</i></strong><br>'}
+                <h3>Client</h3>
                 ${msg["note"]}
             </section>
             `
         }
     });
-
-    if (annasTurn){
-        if (serviceRequest["state"] === "ORDERING"){
-            content += 
-            `
-            <section id="message-hub">
-                <button onclick="handleReject()">Reject</button>
-                <button onclick="document.getElementById('create-quote').style.display = 'block'">Respond with quote</button>
-            </section>
-            `
-        }
-        if (serviceRequest["state"] === "BILLING"){
-            content += 
-            `
-            <section id="message-hub">
-                <textarea id="message"></textarea>
-                <button onclick="sendMessage()">Respond with message</button>
-                <button onclick="reviseBill()">Respond with bill revision</button>
-            </section>
+    if (!["COMPLETED", "CANCELED"].includes(serviceRequest["status"])){
+        if (annasTurn){
+            if (serviceRequest["status"] === "ORDERING"){
+                hub += 
+                `
+                <section id="message-hub">
+                    <button onclick="handleReject()">Reject</button>
+                    <button onclick="document.getElementById('create-quote').style.display = 'block'">Respond with quote</button>
+                </section>
+                `
+            }
+            if (serviceRequest["status"] === "BILLING"){
+                hub += 
+                `
+                <section id="message-hub">
+                    <textarea id="message"></textarea>
+                    <button onclick="sendMessage()">Respond with message</button>
+                    <button onclick="document.getElementById('revise-bill').style.display = 'block'">Respond with bill revision</button>
+                </section>
+                `
+            }
+        }else{
+            hub +=`
+                <section id="message-hub">
+                    Pending message from Client...
+                </section>
             `
         }
     }
-    chatElem.innerHTML = content;
+
+    chatElem.innerHTML = `
+        <h2>Chat</h2>
+        <hr>
+        <section id='chatDisplay'>
+            ${messages}
+        </section>
+        <section id="chatHub">
+            ${hub}
+        </section>
+    `;
 }
 
 async function handleReject(){
-    serviceRequest["state"] = "CANCELED";
+    serviceRequest["status"] = "CANCELED";
     serviceRequest["chatHistory"].push({
-        "state": "CANCELED",
+        "status": "CANCELED",
         "note": "Anna has declined",
     })
-    serviceRequest["chatHistory"] = JSON.stringify(serviceRequest["chatHistory"])
 
     const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
         "method": "PUT",
         "headers": {"Content-Type": "application/json"},
-        "body": JSON.stringify(serviceRequest)
+        "body": JSON.stringify({"updatedFields": {"status": "CANCELED","chatHistory":JSON.stringify(serviceRequest["chatHistory"])}})
     })
     window.location.reload();
 }
@@ -219,33 +241,34 @@ async function createQuote(){
     const windowEnd = document.getElementById("quote-windowEnd").value
     const price = document.getElementById("quote-price").value
 
-    const response = await fetch(`${backendURL}/quotes`,{
+    const makeQuoteRes = await fetch(`${backendURL}/quotes`,{
         "method": "POST",
         "headers": {"Content-Type": "application/json"},
         "body": JSON.stringify({"clientID": serviceRequest["clientID"], note, windowStart, windowEnd, price})
     })
-    const quoteID = await response.json();
+    const data = await makeQuoteRes.json();
+
     serviceRequest["chatHistory"].push({
-        "state": "ORDERING",
+        "status": "ORDERING",
         note,
         windowStart,
         windowEnd,
         price,
-        quoteID
+        "quoteID": data["quoteID"]
     });
-    serviceRequest["chatHistory"] = JSON.stringify(serviceRequest["chatHistory"])
-    const response2 = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
+    const updatedSRRes = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
         "method": "PUT",
         "headers": {"Content-Type": "application/json"},
-        "body": JSON.stringify(serviceRequest)
+        "body": JSON.stringify({"updatedFields": {"chatHistory": JSON.stringify(serviceRequest["chatHistory"])}})
     })
+    console.log(updatedSRRes)
     window.location.reload()
 }
 
 async function sendMessage() {
     const message = document.getElementById("message").value;
     serviceRequest["chatHistory"].push({
-        "state": "BILLING",
+        "status": "BILLING",
         "note": message,
     })
     serviceRequest["chatHistory"] = JSON.stringify(serviceRequest["chatHistory"])
@@ -272,55 +295,18 @@ async function reviseBill() {
     const newBillResponse = await fetch(`${backendURL}/bills`,{
         "method": "POST",
         "headers": {"Content-Type": "application/json"},
-        "body": JSON.stringify({"clientID": serviceRequest["clientID"], price})
+        "body": JSON.stringify({"clientID": serviceRequest["clientID"], price, "orderID": serviceRequest["requestID"]})
     })
+
     serviceRequest["chatHistory"].push({
-        "state": "BILLING",
+        "status": "BILLING",
+        "revision": true,
         note,
     });
-    serviceRequest["chatHistory"] = JSON.stringify(serviceRequest["chatHistory"])
     const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
         "method": "PUT",
         "headers": {"Content-Type": "application/json"},
-        "body": JSON.stringify(serviceRequest)
+        "body": JSON.stringify({"updatedFields": {"chatHistory": JSON.stringify(serviceRequest["chatHistory"])}})
     })
     window.location.reload()
 }
-
-// function toggleEdit(){
-//     allowChanges = !allowChanges;
-//     loadForm(serviceRequest);
-// }
-// async function send(type, note){
-//     const formData = new FormData(srForm);
-
-//     serviceRequest["chatHistory"] = JSON.stringify([...serviceRequest["chatHistory"], {
-//         "state": type,
-//         "note": note
-//     }]);
-//     Object.keys(serviceRequest).forEach(field => {
-//         !formData.has(field) && formData.append(field, serviceRequest[field]);
-//     })
-    
-//     // if (type === "ACCEPTED"){
-
-//     // }
-//     // if (type === "REJECTED"){
-
-//     // }
-//     // if (type === "RENEGOTIATING"){
-        
-//     // }
-//     const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {method: "POST", body: formData});
-//     const newRequest = await response.json();
-//     if (!newRequest.success){
-//         alert("Failed to change service request.");
-//         return
-//     }
-//     alert("Changes submitted!");
-//     serviceRequest = newRequest;
-//     annasTurn = false
-//     allowChanges= false
-//     loadForm(newRequest);
-//     loadChat(newRequest);
-// }
