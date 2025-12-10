@@ -318,12 +318,10 @@ class ServiceRequests {
                else resolve(data);
          });
       });
-      result = result.map(req => {
-         req["photos"] = JSON.parse(req["photos"]);
-         req["chatHistory"] = JSON.parse(req["chatHistory"])
-         return req;
-      })
-      return result[0];
+      const data = result[0];
+      data["photos"] = JSON.parse(data["photos"]);
+      data["chatHistory"] = JSON.parse(data["chatHistory"])
+      return data;
    }
    async getClientRequests(clientID) {
       let result = await new Promise((resolve, reject) => {

@@ -67,16 +67,25 @@
             }
             #chatDisplay{
                 height: 100%;
-                
+                border: 1px solid;
+                border-radius: 10px;
+                overflow-y: auto;
             }
             #chatHub{
                 padding: 10px;
+            }
+            .message{
+                border: 1px solid rgba(219, 219, 219, 0.4);
+                padding: 5px;
+                border-radius: 5px;
             }
         </style>
         <title>Document</title>
     </head>
     <body>
         <h1 id="page-title"></h1>
+        <a href="clientDashboard.html"><button>Back</button></a>
+
         <div id="page-main">
             <div id="page-left">
                 <form id="sr-form">
