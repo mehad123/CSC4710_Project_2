@@ -4,6 +4,10 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+            h1, h2, h3{
+                width: 100%;
+                text-align: center;
+            }
             #client-list{
                 display: flex;
                 flex-direction: column;
@@ -11,63 +15,96 @@
             } 
             .client{
                 border: 1px solid;
-                width: fit-content;
+                width: fit-content; 
                 padding: 10px;
                 background-color: rgb(248, 246, 244);
+                max-width: 300px;
             }
+            .service-request{
+                border: 1px solid;
+                width: fit-content; 
+                padding: 10px;
+                background-color: rgb(248, 246, 244);
+                max-width: 300px;
+
+            }
+            .results-container{
+                display: flex;
+                overflow-x: auto;
+                list-style: none;
+            }
+
+
         </style>
         <title>Document</title>
     </head>
     <body>
         <h1>Welcome to your dashboard, Anna!</h1>
-        <br><hr>
+        <br>
         <h2>Clients</h2>
         <div>
             <h3>All Clients</h3>
-            <ul id="all-clients">
+            <hr>
+            <ul class="results-container" id="all-clients">
             </ul>
         </div>
         <div>
             <h3>Frequent Clients</h3>
-            <ul id="frequent-clients">
+            <hr>
+
+            <ul class="results-container" id="frequent-clients">
             </ul>
         </div>
         <div>
             <h3>Uncommitted Clients</h3>
-            <ul id="Uncommitted-clients">
+            <hr>
+
+            <ul class="results-container" id="uncommitted-clients">
             </ul>
         </div>
         <div>
             <h3>Prospective Clients</h3>
-            <ul id="prospective-clients">
+            <hr>
+
+            <ul class="results-container" id="prospective-clients">
             </ul>
         </div>
         <div>
             <h3>Good Clients</h3>
-            <ul id="good-clients">
+            <hr>
+
+            <ul class="results-container" id="good-clients">
             </ul>
         </div>
         <div>
             <h3>Bad Clients</h3> 
-            <ul id="bad-clients">
+            <hr>
+
+            <ul class="results-container" id="bad-clients">
             </ul>
         </div>
         <h2>Quotes</h2>
         <div>
             <h3>Accepted Quotes</h3>
-            <ul id="accepted-quotes">
+            <hr>
+
+            <ul class="results-container" id="accepted-quotes">
             </ul>
         </div>
         <h2>Service Requests</h2>
         <div>
             <h3>Largest Jobs</h3>
-            <ul id="largest-jobs">
+            <hr>
+
+            <ul class="results-container" id="largest-jobs">
             </ul>
         </div>
         <h2>Bills</h2>
         <div>
             <h3>Overdue Bills</h3>
-            <ul id="overdue-bills">
+            <hr>
+
+            <ul class="results-container" id="overdue-bills">
             </ul>
         </div>
         <script src="annaDashboard.js"></script>

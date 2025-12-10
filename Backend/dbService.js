@@ -127,7 +127,7 @@ class Users{
       });
    }
    async validateLogin(email, password){ 
-      //are we anna? this is temporary
+      //are we anna? 
       if (email === "anna" && password === "123"){
          return { success: true, clientID: "anna" };
       }
@@ -146,21 +146,33 @@ class Users{
       
       return { success: true, clientID: realPassword[0].clientID };
    }
-   async updateUser(email, updatedFields){
+   async updateUser(clientID, updatedFields){
       const fields = Object.keys(updatedFields);
       const newValues = fields.map(key => updatedFields[key]);
 
       const formattedFieldsForQuery = fields.map(key => `${key} = ?`).join(", ");
 
       await new Promise((resolve, reject) => {
-         const query = `UPDATE users SET ${formattedFieldsForQuery} WHERE email = ?;`;
-         connection.query(query, [...newValues, email], (err, data) => {
+         const query = `UPDATE users SET ${formattedFieldsForQuery} WHERE clientID = ?;`;
+         connection.query(query, [...newValues, clientID], (err, data) => {
                if(err) reject(new Error(err.message));
                else resolve(data);
          });
       });
    }
-
+   async getUser(clientID){
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT firstname, lastname, clientID, requestIDs FROM users WHERE clientID = ?`;
+         connection.query(query, [clientID],(err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      result.forEach(client =>{
+         client["requestIDs"] = JSON.parse(client["requestIDs"])
+      })
+      return result[0];
+   }  
    async getAllUsers(){
       const result = await new Promise((resolve, reject) => {
          const query = `SELECT firstname, lastname, clientID, requestIDs FROM users`;
@@ -283,6 +295,7 @@ class ServiceRequests {
             else resolve(data);
          });
       });
+      return requestID
    }
    async updateServiceRequest(requestID, updatedFields){
       const fields = Object.keys(updatedFields);
@@ -343,7 +356,7 @@ class ServiceRequests {
       return result;
    }
    async getLargestRequests(){
-      const result = await new Promise((resolve, reject) => {
+      let result = await new Promise((resolve, reject) => {
          const query = `SELECT * FROM service_requests ORDER BY roomQuantity DESC`;
          connection.query(query, [],(err, data) => {
                if(err) reject(new Error(err.message));

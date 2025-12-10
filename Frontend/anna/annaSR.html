@@ -4,25 +4,78 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+            h1, h2{
+                width: 100%;
+                text-align: center;
+            }
             body{
-                display: flex;
                 height: 100vh;
+            }
+            #page-main{
+                display: flex;
+                height: 100%;
+                gap: 10px;
+            }
+            #page-left{
+                display: flex;
+                flex-direction: column;
+                flex: 2;
+                border: 1px solid gray;
+                border-radius: 10px;
+                padding: 10px;
+                align-items: center;
+            }
+            #page-right{
+                flex: 1;
+                border: 1px solid gray;
+                border-radius: 10px;
+            }
+
+            form{
+                width: fit-content;
+                background-color: rgb(239, 247, 253);
+                border-radius: 20px;
+                border: 1px dotted;
+            }
+            fieldset{
+                border: 1px solid rgba(128, 128, 128, 0.204);
+                border-radius: 10px;
+            }
+            ul{
+                margin: 0;
+            }
+            #images{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 3px;
+            }
+            #images li{
+                width: 100px;
+                height: 100px;
+                overflow: hidden;
+            }
+            #images img{ 
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
             }
             #SR-info{
                 flex: 1; 
                 border: 1px solid;
             }
+
             #chat{
                 height: 100%;
                 display: flex;
                 flex-direction: column;
-                border: 1px solid;
-
                 justify-content: space-between; 
             }
             #chatDisplay{
-                border: 1px solid;
                 height: 100%;
+                
+            }
+            #chatHub{
+                padding: 10px;
             }
             #create-quote, #revise-bill{
                 display: hidden;
@@ -41,6 +94,7 @@
         <div id="page-main">
             <div id="page-left">
                 <form id="sr-form">
+                    <h2>Service Request Information</h2>
                 </form>  
                 <form id="order-form">
                 </form>  
@@ -49,6 +103,7 @@
             </div>
             <div id="page-right">
                 <section id="chat">
+                    <h2>Chat</h2>
                 </section>
             </div>
 
@@ -56,7 +111,7 @@
         <section id="create-quote">
             <ul>
                 <input id="quote-price" >
-                <input id="quote-windowStart" >
+                <input id="quote-windowStart" > 
                 <input id="quote-windowEnd" >
                 <input id="quote-note">
                 <button onclick="createQuote()">Send Quote</button>

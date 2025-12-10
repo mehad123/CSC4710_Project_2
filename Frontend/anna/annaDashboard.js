@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     .then(res=> res.json())
     .then(all => loadAll(all));
 
-    fetch(backendURL + "/users/frequents")
+    fetch(backendURL + "/users/frequent")
     .then(res=> res.json())
     .then(freqeunts => loadFrequents(freqeunts));
 
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     .then(res=> res.json())
     .then(uncommitted => loadUncommited(uncommitted));
 
-    fetch(backendURL + "/users/prospectives")
+    fetch(backendURL + "/users/prospective")
     .then(res=> res.json())
     .then(prospectives => loadProspectives(prospectives));
 
@@ -54,28 +54,35 @@ function loadClient(client){
     `
         <li>
             <section class='client'>
-                <ul>
-                    <li>Client Name: ${client["firstname"]} ${client["lastname"]}</li>
-                    <li>
-                        Client Service Requests: 
-                        <ul>
-                            ${
-                                client["SRlist"].map(elem=>{
-                                    return `<li><a href='annaSR.html?requestID=${elem}'>${elem}</a></li>`
-                                }).join("")
-                            }                        
-                        </ul>
-                    </li>
-                </ul>
-                Client Name: ${client["name"]}
-                <br/>
-                Client Service Requests: 
+                <span>Client Name: ${client["firstname"]} ${client["lastname"]}</span><br>
+                <span>Client ID: <br> ${client["clientID"]}</span>
+
+                <br>
+                <span>Recent Service Requests: </span>
                 <ul>
                     ${
-                        client["SRlist"].map(elem=>{
+                        client["requestIDs"].slice(-3).reverse().map(elem=>{
                             return `<li><a href='annaSR.html?requestID=${elem}'>${elem}</a></li>`
                         }).join("")
-                    }
+                    }                        
+                </ul>
+            </section>
+        </li>
+    `
+    return content
+}
+function loadServiceRequests(request){
+    const content = 
+    `
+        <li>
+            <section class='service-request'>
+                <span>Client ID: <br> ${request["clientID"]}</span><br>
+                <span>Request ID:<br> <a href='annaSR.html?requestID=${request["requestID"]}'>${request["requestID"]}</a></span>
+                <br>
+                <span>Service Request Info: </span>
+                <ul>
+                    <li>Status: ${request["status"]}</li>                         
+                    <li>Number of rooms: ${request["roomQuantity"]}</li>                         
                 </ul>
             </section>
         </li>
@@ -83,12 +90,56 @@ function loadClient(client){
     return content
 }
 
+function loadBill(bill){
+    const content = 
+    `
+        <li>
+            <section class='bill'>
+                <span>Client ID: <br> ${bill["clientID"]}</span><br>
+                <span>Bill ID:<br> ${bill["billID"]}</span>
+                <br>
+                <span>Bill Info: </span>
+                <ul>
+                    <li>Total: $${bill["price"]}</li>
+                    <li>Generated: ${bill["generated"]}</li>                         
+                    <li>Paid: ${request["paid"] || "Unpaid"}</li>                         
+                </ul>
+            </section>
+        </li>
+    `
+    return content
+}
+function loadQuote(quote){
+    const content = 
+    `
+        <li>
+            <section class='quote'>
+                <span>Client ID: <br> ${quote["clientID"]}</span><br>
+                <span>Quote ID:<br> ${quote["quoteID"]}</span>
+                <br>
+                <span>Bill Info: </span>
+                <ul>
+                    <li>Total: $${quote["price"]}</li>
+                    <li>Status: ${quote["status"]}</li>                         
+                    <li>Decided: ${quote["decided"] || "unknown"}</li>                         
+                </ul>
+            </section>
+        </li>
+    `
+    return content
+}
+
+
+
 function loadAll(items){
     const clients = document.getElementById("all-clients");
     let content = "";
     items.forEach(c => {
         content += loadClient(c);
     });
+    if (items.length === 0){
+        content = "No items yet"
+    }
     clients.innerHTML = content;
 }
 function loadFrequents(items){
@@ -97,6 +148,9 @@ function loadFrequents(items){
     items.forEach(c => {
         content += loadClient(c);
     });
+    if (items.length === 0){
+        content = "No items yet"
+    }
     frequents.innerHTML = content;
 }
 function loadUncommited(items){
@@ -105,6 +159,9 @@ function loadUncommited(items){
     items.forEach(c => {
         content += loadClient(c);
     });
+    if (items.length === 0){
+        content = "No items yet"
+    }
     uncommitted.innerHTML = content;
 }
 function loadProspectives(items){
@@ -113,6 +170,9 @@ function loadProspectives(items){
     items.forEach(c => {
         content += loadClient(c);
     });
+    if (items.length === 0){
+        content = "No items yet"
+    }
     prospectives.innerHTML = content;
 }
 
@@ -122,6 +182,9 @@ function loadGood(items){
     items.forEach(c => {
         content += loadClient(c);
     });
+    if (items.length === 0){
+        content = "No items yet"
+    }
     goodClients.innerHTML = content;
 }
 
@@ -137,24 +200,33 @@ function loadAccepted(items){
     const accepted = document.getElementById("accepted-quotes");
     let content = "";
     items.forEach(c => {
-        content += loadClient(c);
+        content += loadQuote(c);
     });
+    if (items.length === 0){
+        content = "No items yet"
+    }
     accepted.innerHTML = content;
 }
 function loadLargest(items){
     const bigJobs = document.getElementById("largest-jobs");
     let content = "";
     items.forEach(c => {
-        content += loadClient(c);
+        content += loadServiceRequests(c);
     });
+    if (items.length === 0){
+        content = "No items yet"
+    }
     bigJobs.innerHTML = content;
 }
 function loadOverdue(items){
     const overdue = document.getElementById("overdue-bills");
     let content = "";
     items.forEach(c => {
-        content += loadClient(c);
+        content += loadBill(c);
     });
+    if (items.length === 0){
+        content = "No items yet"
+    }
     overdue.innerHTML = content;
 }
 

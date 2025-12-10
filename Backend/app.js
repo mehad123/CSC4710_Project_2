@@ -42,10 +42,15 @@ const logInUser = handleError(async (request, response) => {
     response.json(result);
 });
 const updateUser = handleError(async (request, response) => {  
-    const {email} = request.params;
+    const {clientID} = request.params;
     const {updatedFields} = request.body;
-    await users.updateUser(email, updatedFields);
+    await users.updateUser(clientID, updatedFields);
     response.send("ok");
+});
+const getUser = handleError(async (req, res) => {
+    const { clientID } = req.params;
+    const result = await users.getUser(clientID);
+    res.json(result);
 });
 const getAllUsers = handleError(async (request, response) => {
     const result = await users.getAllUsers();
@@ -77,8 +82,8 @@ const createServiceRequest = handleError(async (req, res) => {
     const data = req.body;
     data["photos"] = JSON.stringify(req.files.map(file => `data:${file.mimetype};base64,${file.buffer.toString("base64")}`));
     
-    await serviceRequests.createServiceRequest(data);
-    res.json({ success: true });
+    const requestID = await serviceRequests.createServiceRequest(data);
+    res.json({ success: true, requestID });
 });
 const updateServiceRequest = handleError(async (request, response) =>{
     const {requestID} = request.params;
@@ -101,7 +106,7 @@ const getAllServiceRequests = handleError(async (request, response) => {
     response.json(result)
 }) 
 const getLargestRequests = handleError(async (request, response) => {
-    const result = await serviceOrders.getLargestRequests();
+    const result = await serviceRequests.getLargestRequests();
     response.json(result);
 })
 
@@ -162,7 +167,8 @@ app.get("/users/uncommitted", getUncommittedClients);
 app.get("/users/prospective", getProspectiveClients); 
 app.get("/users/good", getGoodClients); 
 app.get("/users/bad", getBadClients); 
-app.post("/users/:email", updateUser);
+app.put("/users/:clientID", updateUser);
+app.get("/users/:clientID", getUser);
 
 
 app.post("/service-requests", upload.array("photos", 5), createServiceRequest);
