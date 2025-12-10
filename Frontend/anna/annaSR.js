@@ -1,16 +1,13 @@
 const backendURL = "http://localhost:5050";
 
-let allowChanges = false;
 let annasTurn;
 let serviceRequest;
+let srState;
 
 const srTitle = document.getElementById("page-title");
-
 const srForm = document.getElementById("sr-form");
 const orderForm = document.getElementById("order-form")
 const billForm = document.getElementById("bill-form")
-
-
 const chatElem = document.getElementById("chat");
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -23,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     .then(SR => {
         annasTurn = serviceRequest["chatHistory"].length % i == 0;
         serviceRequest = SR;
+        srState = SR["state"];
         loadServiceRequest(SR);
         loadChat(SR);
     })
@@ -63,15 +61,16 @@ function loadServiceRequest(SR){
                 <li>Note: <p>${SR["optionalNote"] || "None"}</p></li>
             </ul>
         </fieldset>
-        ${/*SR["photos"].length > 0 &&
-        `<fieldset>
-            <legend>Images</legend>
-            <ul>
-                ${SR["photos"].map(url => `<img src=${url} alt="photo">`)}
-            </ul>
-        </fieldset>
-        `*/}
+
     `;
+        // ${/*SR["photos"].length > 0 &&
+        // `<fieldset>
+        //     <legend>Images</legend>
+        //     <ul>
+        //         ${SR["photos"].map(url => `<img src=${url} alt="photo">`)}
+        //     </ul>
+        // </fieldset>
+        // `*/}
     srForm.innerHTML = content;
 }
 
@@ -125,30 +124,68 @@ function loadBill(bill){
     billForm.innerHTML = content;
 }
 function loadChat(SR){
-    // const chat = SR["chatHistory"];
+    const chat = SR["chatHistory"];
 
-    // chat.forEach(msg => {  
-    //     content += 
-    //     `
-    //     <section class="message">
-    //         <ul>
-    //             <li>Decision: ${msg["state"]}</li>
-    //             <li>Note: ${msg["note"]}/</li>
-    //         </ul>
-    //     </section>
-    //     `
-    // });
-    // if (annasTurn && !["COMPLETED", "CANCELED"].includes(SR["status"])){
-    //     content += 
-    //     `
-    //     <section class="send-message">
-    //         <button onclick="send('accept')">Accept</button>
-    //         <button onclick="send('reject')">Reject</button>
-    //         <button onclick="send('renegotiate')">Renegotiate</button>
-    //     </section>
-    //     `
-    // }
-    // chatElem.innerHTML = content;
+    chat.forEach((msg, i) => {  
+        if (i % 2 == 0){
+            content += 
+            `
+            <section class="message">
+                ${
+                    msg["state"] === "ORDERING" 
+                    ?
+                    `
+                    <article class="quote">   
+                        <ul>
+                            <li>Scheduled window: ${msg["windowStart"]} to ${msg["windowEnd"]}</li>
+                            <li>Price: ${msg["price"]}</li>
+                            <li>Note: ${msg["note"]}/</li>
+                        </ul>
+                    </article>
+                    `
+                    :
+                    `
+                    <section class="message">
+                        ${msg["note"]}
+                    </section>
+                    `
+                }
+
+            </section>
+            `
+        }else{
+            content += 
+            `
+            <section class="message">
+                ${msg["revision"] && '<strong><i>Anna has revised the bill</i></strong><br>'}
+                ${msg["note"]}
+            </section>
+            `
+        }
+    });
+
+    if (annasTurn){
+        if (srState === "ORDERING"){
+            content += 
+            `
+            <section id="message-hub">
+                <button onclick="handleReject()">Reject</button>
+                <button onclick="createQuote()">Respond with quote</button>
+            </section>
+            `
+        }
+        if (srState === "BILLING"){
+            content += 
+            `
+            <section id="message-hub">
+                <textarea id="message"></textarea>
+                <button onclick="sendMessage()">Respond with message</button>
+                <button onclick="reviseBill()">Respond with bill revision</button>
+            </section>
+            `
+        }
+    }
+    chatElem.innerHTML = content;
 }
 
 
