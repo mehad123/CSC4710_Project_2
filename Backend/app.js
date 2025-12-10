@@ -75,7 +75,7 @@ const getBadClients = handleError(async (request, response) => {
 
 const createServiceRequest = handleError(async (req, res) => {
     const data = req.body;
-    data["photos"] = JSON.stringify(req.files.map(file => file.buffer.toString("base64")));
+    data["photos"] = JSON.stringify(req.files.map(file => `data:${file.mimetype};base64,${file.buffer.toString("base64")}`));
     
     await serviceRequests.createServiceRequest(data);
     res.json({ success: true });

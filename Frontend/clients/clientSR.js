@@ -4,7 +4,6 @@ const backendURL = "http://localhost:5050";
 let serviceRequest;
 let currentBill;
 
-let srState;
 let annasTurn;
 
 const srTitle = document.getElementById("page-title");
@@ -49,8 +48,7 @@ function loadServiceRequest(SR){
 
     let content = 
      `
-        <h2>Service Request Info</h2>
-        <fieldset>
+         <fieldset>
             <legend>General Information</legend>
             <ul>
                 <li>Request ID: ${SR["requestID"]}</li>
@@ -69,16 +67,18 @@ function loadServiceRequest(SR){
                 <li>Note: <p>${SR["optionalNote"] || "None"}</p></li>
             </ul>
         </fieldset>
+        ${SR["photos"].length > 0 &&
+            `<fieldset>
+                <legend>Images</legend>
+                <ul>
+                    ${SR["photos"].map(url => `<a href=${url} target='_blank'><img src=${url} alt="photo"></a>`)}
+                </ul>
+            </fieldset>`
+        }
+
 
     `;
-        // ${/*SR["photos"].length > 0 &&
-        // `<fieldset>
-        //     <legend>Images</legend>
-        //     <ul>
-        //         ${SR["photos"].map(url => `<img src=${url} alt="photo">`)}
-        //     </ul>
-        // </fieldset>
-        // `*/}
+
     srForm.innerHTML = content;
 }
 
@@ -173,7 +173,7 @@ function loadChat(SR){
         }
     });
 
-    if (annasTurn){
+    if (!annasTurn){
         if (serviceRequest["state"] === "ORDERING"){
             content += 
             `

@@ -4,44 +4,54 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+            h1, h2{
+                width: 100%;
+                text-align: center;
+            }
             body{
+                height: 90vh;
+            }
+            #page-main{
                 display: flex;
-                height: 100vh;
+                height: 100%;
+                gap: 10px;
             }
-            #SR-info{
-                flex: 1; 
-                border: 1px solid;
+            #page-left{
+                display: flex;
+                flex-direction: column;
+                flex: 2;
+                border: 1px solid gray;
+                border-radius: 10px;
             }
+            #page-right{
+                flex: 1;
+                border: 1px solid gray;
+                border-radius: 10px;
+            }
+            #sr-form img{
+                width: 200px;
+            }
+
             #chat{
                 height: 100%;
                 display: flex;
                 flex-direction: column;
-                border: 1px solid;
-
                 justify-content: space-between; 
             }
             #chatDisplay{
                 border: 1px solid;
                 height: 100%;
             }
-            #create-quote, #revise-bill{
-                display: none;
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background-color: antiquewhite;
-                padding: 30px;
-            }
+
         </style>
         <title>Document</title>
     </head>
     <body>
-        <h1 id="page-title"></h1>
+        <h1 id="page-title">Service request</h1>
         <div id="page-main">
             <div id="page-left">
                 <form id="sr-form">
-                    
+                    <h2>Service Request Information</h2>
                 </form>  
                 <form id="order-form"> 
                 </form>  
