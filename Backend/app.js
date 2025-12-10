@@ -127,8 +127,8 @@ const getLargestRequests = handleError(async (request, response) => {
 
 
 const createQuote = handleError(async (request, response) => {  
-    await quotes.createQuote(request.body); 
-    response.send("ok");
+    const quoteID = await quotes.createQuote(request.body); 
+    response.json({quoteID});
 });
 const updateQuote = handleError(async (request, response) =>{
     const {quoteID} = request.params;
@@ -163,6 +163,11 @@ const updateBill = handleError(async (request, response) =>{
     await bills.updateBill(billID, updatedFields);
     response.send("ok");
 })
+const getBills = handleError(async (req, res) => {
+    const { requestID } = req.params;
+    const result = await serviceRequests.getBills(requestID);
+    res.json(result);
+});
 const getOverdueBills = handleError(async (request, response) => {
     const result = await bills.getOverdueBills();
     response.json(result)
@@ -194,6 +199,7 @@ app.post("/service-orders", createServiceOrder);
 app.get("/service-orders/:orderID", getServiceOrder);
 
 app.post("/bills", createBill)
+app.get("/bills/:requestID", getBills);
 app.put("/bills/:billID", updateBill);
 app.get("/bills/overdue", getOverdueBills)
 

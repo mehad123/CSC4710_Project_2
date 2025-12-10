@@ -374,17 +374,18 @@ class Quotes{
         return quotesInstance;
    }
    async createQuote(options) {
-      const {clientID, status, price, windowStart, windowEnd, note} = options;
+      const {clientID, price, windowStart, windowEnd, note} = options;
       const quoteID = uuidv4();
 
       await new Promise((resolve, reject) => {
          const query = `INSERT INTO quotes (quoteID, clientID, status, price, windowStart, windowEnd, note) VALUES (?, ?, ?, ?, ?, ?, ?);`;
-         connection.query(query, [quoteID, clientID, status, price, windowStart, windowEnd, note], (err, data) => {
+         connection.query(query, [quoteID, clientID, "PENDING", price, windowStart, windowEnd, note], (err, data) => {
                if (err) reject(new Error(err.message));
                else resolve(data);
             }
          );
       });
+      return quoteID
    }
    async updateQuote(quoteID, updatedFields){
       const fields = Object.keys(updatedFields);
@@ -446,6 +447,16 @@ class Bills{
                else resolve(data);
          });
       });
+   }
+   async getBills(requestID){
+      const result = await new Promise((resolve, reject) => {
+         const query = `SELECT * FROM bills WHERE requestID = ?`;
+         connection.query(query, [requestID], (err, data) => {
+               if(err) reject(new Error(err.message));
+               else resolve(data);
+         });
+      });
+      return result;
    }
    async getOverdueBills(){
       const result = await new Promise((resolve, reject) => {

@@ -1,8 +1,11 @@
 const backendURL = "http://localhost:5050";
 
-let annasTurn;
+
 let serviceRequest;
+let currentBill;
+
 let srState;
+let annasTurn;
 
 const srTitle = document.getElementById("page-title");
 const srForm = document.getElementById("sr-form");
@@ -20,18 +23,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     .then(SR => {
         annasTurn = serviceRequest["chatHistory"].length % i == 0;
         serviceRequest = SR;
-        srState = SR["state"];
+        if (!["ORDERING", "CANCELED"].includes(SR["state"])){
+            fetch(`${backendURL}/service-orders/${requestID}`)
+            .then(res => res.json())
+            .then(order => loadServiceOrder(order));
+
+            fetch(`${backendURL}/bills/${requestID}`)
+            .then(res => res.json())
+            .then(bills => {
+                currentBill = bills.at(-1) 
+                loadBill(currentBill)
+            })
+        }
         loadServiceRequest(SR);
         loadChat(SR);
     })
 
-    fetch(`${backendURL}/service-orders/${requestID}`)
-    .then(res => res.json())
-    .then(order => loadServiceOrder(order));
 
-    fetch(`${backendURL}/bills/${requestID}`)
-    .then(res => res.json())
-    .then(bills => loadBill(bills[bills.length-1]))
 }); 
 
 
@@ -139,8 +147,9 @@ function loadChat(SR){
                         <ul>
                             <li>Scheduled window: ${msg["windowStart"]} to ${msg["windowEnd"]}</li>
                             <li>Price: ${msg["price"]}</li>
-                            <li>Note: ${msg["note"]}/</li>
                         </ul>
+                        <br>
+                        ${msg["note"]}
                     </article>
                     `
                     :
@@ -165,16 +174,16 @@ function loadChat(SR){
     });
 
     if (annasTurn){
-        if (srState === "ORDERING"){
+        if (serviceRequest["state"] === "ORDERING"){
             content += 
             `
             <section id="message-hub">
                 <button onclick="handleReject()">Reject</button>
-                <button onclick="createQuote()">Respond with quote</button>
+                <button onclick="document.getElementById('create-quote').style.display = 'block'">Respond with quote</button>
             </section>
             `
         }
-        if (srState === "BILLING"){
+        if (serviceRequest["state"] === "BILLING"){
             content += 
             `
             <section id="message-hub">
@@ -188,6 +197,95 @@ function loadChat(SR){
     chatElem.innerHTML = content;
 }
 
+async function handleReject(){
+    serviceRequest["state"] = "CANCELED";
+    serviceRequest["chatHistory"].push({
+        "state": "CANCELED",
+        "note": "Anna has declined",
+    })
+    serviceRequest["chatHistory"] = JSON.stringify(serviceRequest["chatHistory"])
+
+    const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
+        "method": "PUT",
+        "headers": {"Content-Type": "application/json"},
+        "body": JSON.stringify(serviceRequest)
+    })
+    window.location.reload();
+}
+
+async function createQuote(){
+    const note = document.getElementById("quote-note").value
+    const windowStart = document.getElementById("quote-windowStart").value
+    const windowEnd = document.getElementById("quote-windowEnd").value
+    const price = document.getElementById("quote-price").value
+
+    const response = await fetch(`${backendURL}/quotes`,{
+        "method": "POST",
+        "headers": {"Content-Type": "application/json"},
+        "body": JSON.stringify({"clientID": serviceRequest["clientID"], note, windowStart, windowEnd, price})
+    })
+    const quoteID = await response.json();
+    serviceRequest["chatHistory"].push({
+        "state": "ORDERING",
+        note,
+        windowStart,
+        windowEnd,
+        price,
+        quoteID
+    });
+    serviceRequest["chatHistory"] = JSON.stringify(serviceRequest["chatHistory"])
+    const response2 = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
+        "method": "PUT",
+        "headers": {"Content-Type": "application/json"},
+        "body": JSON.stringify(serviceRequest)
+    })
+    window.location.reload()
+}
+
+async function sendMessage() {
+    const message = document.getElementById("message").value;
+    serviceRequest["chatHistory"].push({
+        "state": "BILLING",
+        "note": message,
+    })
+    serviceRequest["chatHistory"] = JSON.stringify(serviceRequest["chatHistory"])
+
+    const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
+        "method": "PUT",
+        "headers": {"Content-Type": "application/json"},
+        "body": JSON.stringify(serviceRequest)
+    })
+    window.location.reload();
+}
+
+async function reviseBill() {
+    const price = document.getElementById("bill-price").value
+    const note = document.getElementById("bill-note").value
+
+
+    const cancelBillResponse = await fetch(`${backendURL}/bills/${currentBill["billID"]}`,{
+        "method": "PUT",
+        "headers": {"Content-Type": "application/json"},
+        "body": JSON.stringify({"updatedFields": {"canceled": true}})
+    })
+
+    const newBillResponse = await fetch(`${backendURL}/bills`,{
+        "method": "POST",
+        "headers": {"Content-Type": "application/json"},
+        "body": JSON.stringify({"clientID": serviceRequest["clientID"], price})
+    })
+    serviceRequest["chatHistory"].push({
+        "state": "BILLING",
+        note,
+    });
+    serviceRequest["chatHistory"] = JSON.stringify(serviceRequest["chatHistory"])
+    const response = await fetch(`${backendURL}/service-requests/${serviceRequest["requestID"]}`, {
+        "method": "PUT",
+        "headers": {"Content-Type": "application/json"},
+        "body": JSON.stringify(serviceRequest)
+    })
+    window.location.reload()
+}
 
 // function toggleEdit(){
 //     allowChanges = !allowChanges;

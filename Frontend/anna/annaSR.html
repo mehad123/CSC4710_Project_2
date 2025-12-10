@@ -24,6 +24,15 @@
                 border: 1px solid;
                 height: 100%;
             }
+            #create-quote, #revise-bill{
+                display: hidden;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: antiquewhite;
+                padding: 30px;
+            }
         </style>
         <title>Document</title>
     </head>
@@ -40,11 +49,33 @@
             </div>
             <div id="page-right">
                 <section id="chat">
-                    
                 </section>
             </div>
-        </div>
 
+        </div>
+        <section id="create-quote">
+            <ul>
+                <input id="quote-price" >
+                <input id="quote-windowStart" >
+                <input id="quote-windowEnd" >
+                <input id="quote-note">
+                <button onclick="createQuote()">Send Quote</button>
+                <button onclick="
+                    document.getElementById('create-quote').style.display = 'none'
+                ">Cancel</button>
+            </ul>
+        </section>
+        <section id="revise-bill">
+            <ul>
+                <input id="bill-price" >
+                <input id="bill-note" >
+
+                <button onclick="reviseBill()">Send Quote</button>
+                <button onclick="
+                    document.getElementById('revise-bill').style.display = 'none'
+                ">Cancel</button>
+            </ul>
+        </section>
         <script src="annaSR.js"></script>
     </body>
 </html>
