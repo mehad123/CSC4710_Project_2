@@ -20,7 +20,7 @@ function loadTable(queries){
     queries.forEach(c => {
         content += `
         <li>
-            Service Request ID: <a href='clientSR.html?SR=${c.requestID}'>${c.requestID}</a>
+            Service Request ID: <a href='clientSR.html?requestID=${c.requestID}'>${c.requestID}</a>
         </li>`;
     });
     services.innerHTML = content;

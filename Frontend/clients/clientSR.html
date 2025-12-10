@@ -22,14 +22,41 @@
                 flex: 2;
                 border: 1px solid gray;
                 border-radius: 10px;
+                padding: 10px;
+                align-items: center;
             }
             #page-right{
                 flex: 1;
                 border: 1px solid gray;
                 border-radius: 10px;
             }
-            #sr-form img{
-                width: 200px;
+            form{
+                width: fit-content;
+                background-color: rgb(239, 247, 253);
+                border-radius: 20px;
+                border: 1px dotted;
+            }
+            fieldset{
+                border: 1px solid rgba(128, 128, 128, 0.204);
+                border-radius: 10px;
+            }
+            ul{
+                margin: 0;
+            }
+            #images{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 3px;
+            }
+            #images li{
+                width: 100px;
+                height: 100px;
+                overflow: hidden;
+            }
+            #images img{
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
             }
 
             #chat{
@@ -39,15 +66,17 @@
                 justify-content: space-between; 
             }
             #chatDisplay{
-                border: 1px solid;
                 height: 100%;
+                
             }
-
+            #chatHub{
+                padding: 10px;
+            }
         </style>
         <title>Document</title>
     </head>
     <body>
-        <h1 id="page-title">Service request</h1>
+        <h1 id="page-title"></h1>
         <div id="page-main">
             <div id="page-left">
                 <form id="sr-form">
@@ -61,10 +90,11 @@
             <div id="page-right">
                 <section id="chat">
                     <h2>Chat</h2>
+                    <hr>
                 </section>
             </div>
 
         </div>
-        <script src="annaSR.js"></script>
+        <script src="clientSR.js"></script>
     </body>
 </html>

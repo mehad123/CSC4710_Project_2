@@ -94,17 +94,12 @@ const getRequests = handleError(async (req, res) => {
 const getRequest = handleError(async (req, res) => {
     const { requestID } = req.params;
     const result = await serviceRequests.getRequest(requestID);
-    if (result && result.photos) {
-        if (typeof result.photos === "string") {
-            result.photos = JSON.parse(result.photos);
-        }
-    }
     res.json(result);
 });
 const getAllServiceRequests = handleError(async (request, response) => {
     const result = await serviceRequests.getAllServiceRequests();
     response.json(result)
-})
+}) 
 const getLargestRequests = handleError(async (request, response) => {
     const result = await serviceOrders.getLargestRequests();
     response.json(result);
